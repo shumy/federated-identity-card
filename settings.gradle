@@ -1,0 +1,3 @@
+include 'card', 'gateway', 'app-example', 't-link-example'
+
+rootProject.name = 'federated-identity-card'

@@ -1,0 +1,9 @@
+dependencies {
+  compile 'info.picocli:picocli:1.0.1'
+}
+
+jar {
+  manifest {
+    attributes 'Class-Path': configurations.compile.collect { '../../../libs/' + it.getName() }.join(' ')
+  }
+}
