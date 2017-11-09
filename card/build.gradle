@@ -1,9 +1,10 @@
 dependencies {
-  compile 'info.picocli:picocli:1.0.1'
+  compile project(':')
 }
 
 jar {
   manifest {
-    attributes 'Class-Path': configurations.compile.collect { '../../../libs/' + it.getName() }.join(' ')
+    attributes 'Main-Class': 'org.fic.card.FicCardCLI',
+      'Class-Path': configurations.compile.collect { '../../../libs/' + it.getName() }.join(' ')
   }
 }

@@ -1,0 +1,1 @@
+java -Dlogback.configurationFile=logback.xml -jar ./build/libs/federated-identity-card-0.1.0.jar "$@"
