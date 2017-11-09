@@ -3,6 +3,7 @@ package org.fic
 import javax.crypto.spec.SecretKeySpec
 import javax.crypto.spec.IvParameterSpec
 import javax.crypto.Cipher
+import java.security.SecureRandom
 
 class CipherHelper {
   val String cipherName
@@ -12,6 +13,14 @@ class CipherHelper {
   new(String cipherName, byte[] key) {
     this.cipherName = cipherName
     skeySpec = new SecretKeySpec(key, "AES")
+  }
+  
+  def randomBytes(int number) {
+    val random = new SecureRandom
+    val keyBytes = newByteArrayOfSize(number)
+    random.nextBytes(keyBytes)
+    
+    return keyBytes
   }
   
   def encrypt(byte[] initVector, String plaintext) {

@@ -1,22 +1,31 @@
 package org.fic
 
 import static extension org.fic.EllipticCurveHelper.*
+import java.util.Arrays
 
 class MainTest {
   def static void main(String[] args) {
     testECDSA
-    println("")
     
+    println("")
     val key = testECDH
-    println("")
     
+    println("")
     testAES(key)
   }
   
   def static testAES(byte[] key) {
-    val cipherHelper = new CipherHelper(key)
+    val sKey = Arrays.copyOfRange(key, 0, 16)
+    val cipherHelper = new CipherHelper(sKey)
     
-    val plaintext = "PlainText to encrypt..."
+    val plaintext = "Lorem ipsum dolor sit amet, consectetur adipiscing elit."
+    val iv = cipherHelper.randomBytes(16)
+    
+    val encrypted = cipherHelper.encrypt(iv, plaintext)
+    println('''Encrypt: «plaintext» -> «encrypted.encode»''')
+    
+    val decrypted = cipherHelper.decrypt(iv, encrypted)
+    println('''Decrypt: «encrypted.encode» -> «decrypted»''')
   }
   
   def static testECDH() {
@@ -46,6 +55,7 @@ class MainTest {
     val k2Hex = k2.encode
     
     println("")
+    println('''  Secret Key («k1.length» bytes): «k1Hex»''')
     println("  Key Agreement OK => " + (k1Hex == k2Hex))
     
     return k1
@@ -67,7 +77,7 @@ class MainTest {
     
     println("")
     val sig = ecHelper.doECDSA(prvAlice, plaintext)
-    println("  Signature: " + sig.encode)
+    println('''  Signature («sig.length» bytes): «sig.encode»''')
     
     val expectedTrue = ecHelper.verifyECDSA(pubAlice, plaintext, sig)
     println("  Signature OK => " + expectedTrue)
