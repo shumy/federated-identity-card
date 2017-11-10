@@ -7,6 +7,7 @@ import java.time.format.DateTimeFormatter
 import java.util.Arrays
 import org.bouncycastle.jce.provider.BouncyCastleProvider
 import org.fic.api.CardBlock
+import org.fic.api.TrustedLink
 import org.fic.crypto.CipherHelper
 import org.fic.crypto.KeyPairHelper
 import org.fic.crypto.SignatureHelper
@@ -38,6 +39,7 @@ class MainTest {
     val alexKp = new KeyPairHelper().genKeyPair
     val newCard = new CardBlock("Alex Name", alexKp.public) => [
       info.put("birthday", LocalDate.of(1981, Month.JANUARY, 28).format(DateTimeFormatter.ISO_LOCAL_DATE))
+      links.add(new TrustedLink("url.pt", "uuid-number", "alias", "pub-key-data"))
       sign(alexKp.private)
     ]
     
