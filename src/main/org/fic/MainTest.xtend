@@ -37,9 +37,9 @@ class MainTest {
   
   def static testCardBlock() {
     val alexKp = new KeyPairHelper().genKeyPair
-    val newCard = new CardBlock("Alex Name", alexKp.public) => [
+    val newCard = new CardBlock(alexKp.public) => [
       info.put("birthday", LocalDate.of(1981, Month.JANUARY, 28).format(DateTimeFormatter.ISO_LOCAL_DATE))
-      links.add(new TrustedLink("url.pt", "uuid-number", "alias", "pub-key-data"))
+      links.add(new TrustedLink("url.pt", "uuid-number", "pub-key-data"))
       sign(alexKp.private)
     ]
     

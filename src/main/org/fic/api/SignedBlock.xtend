@@ -20,7 +20,7 @@ class SignedBlock {
   @JsonIgnore var SignatureHelper signHelper
   @JsonIgnore var KeyLoaderHelper keyLoaderHelper
   
-  @JsonIgnore var sealed = false    // sealed == true means the card is sealed from changes
+  @JsonIgnore @Accessors(PUBLIC_GETTER) var sealed = false  // sealed == true means the card is sealed from changes
   @JsonIgnore var byte[] signature  // signature
   @JsonIgnore var PublicKey pubKey  // public key
   
@@ -52,6 +52,14 @@ class SignedBlock {
     val isOk = signHelper.verifySignature(pubKey, rawJson, signature)
     if (!isOk)
       throw new RuntimeException("Failed in signature verification! On signing card.")
+  }
+  
+  @JsonIgnore
+  def isSignatureOk() {
+    if (!sealed)
+      throw new RuntimeException("Can't verify signature. It's not sealed!")
+    
+    return signHelper.verifySignature(pubKey, jsonData, signature)
   }
   
   def ByteBuffer retrieve() {
@@ -88,14 +96,6 @@ class SignedBlock {
       if (!t.isSignatureOk)
         throw new RuntimeException("Failed in signature verification! On loading data.")
     ]
-  }
-  
-  @JsonIgnore
-  def isSignatureOk() {
-    if (!sealed)
-      throw new RuntimeException("Can't verify signature. It's not sealed!")
-    
-    return signHelper.verifySignature(pubKey, jsonData, signature)
   }
   
   def toJson() {
