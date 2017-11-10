@@ -46,22 +46,22 @@ class EllipticCurveHelper {
     return ka.generateSecret
   }
   
-  def doECDSA(PrivateKey prvKey, String plaintext) {
+  def doECDSA(PrivateKey prvKey, byte[] plaintext) {
+    //val strByte = plaintext.getBytes("UTF-8")
+    
     val dsa = Signature.getInstance(sigName, "BC")
     dsa.initSign(prvKey)
-    
-    val strByte = plaintext.getBytes("UTF-8")
-    dsa.update(strByte)
+    dsa.update(plaintext)
     
     return dsa.sign
   }
   
-  def verifyECDSA(PublicKey pubKey, String plaintext, byte[] signature) {
+  def verifyECDSA(PublicKey pubKey, byte[] plaintext, byte[] signature) {
+    //val strByte = plaintext.getBytes("UTF-8")
+    
     val dsaVerify = Signature.getInstance(sigName, "BC")
     dsaVerify.initVerify(pubKey)
-    
-    val strByte = plaintext.getBytes("UTF-8")
-    dsaVerify.update(strByte)
+    dsaVerify.update(plaintext)
     
     return dsaVerify.verify(signature)
   }

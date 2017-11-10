@@ -1,9 +1,11 @@
 package org.fic.api
 
-import org.fic.JsonDynamicProfile
+import com.fasterxml.jackson.databind.ObjectMapper
 
 class JsonBase {
+  static protected val mapper = new ObjectMapper
+  
   def String toJson() {
-    JsonDynamicProfile.serialize(this)
+    mapper.writeValueAsString(this)
   }
 }

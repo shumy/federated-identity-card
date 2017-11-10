@@ -1,17 +1,42 @@
 package org.fic
 
-import static extension org.fic.EllipticCurveHelper.*
+import java.time.LocalDate
+import java.time.Month
+import java.time.format.DateTimeFormatter
 import java.util.Arrays
+import org.fic.api.CardBlock
+
+import static extension org.fic.EllipticCurveHelper.*
 
 class MainTest {
   def static void main(String[] args) {
+    println("----testECDSA----")
     testECDSA
     
-    println("")
+    println("\n----testECDH----")
     val key = testECDH
     
-    println("")
+    println("\n----testAES----")
     testAES(key)
+    
+    println("\n----testCardBlock----")
+    testCardBlock
+  }
+  
+  def static testCardBlock() {
+    val alexKp = CardBlock.ecHelper.generateKeyPair
+    val newCard = new CardBlock("Alex Name", alexKp.public) => [
+      attributes.put("birthday", LocalDate.of(1981, Month.JANUARY, 28).format(DateTimeFormatter.ISO_LOCAL_DATE))
+      sign(alexKp.private)
+    ]
+    
+    println('''Alex newCard: «newCard.toJson»''')
+    val cData = newCard.retrieve
+    
+    println('''  Encoded newCard: «cData.array.encode»''')
+    val loadedCard = CardBlock.load(cData)
+    
+    println('''Alex loadedCard: «loadedCard.toJson»''')
   }
   
   def static testAES(byte[] key) {
@@ -68,10 +93,10 @@ class MainTest {
     
     val prvAlice = kp1.private
     val pubAlice = kp1.public
-    val plaintext = "Signed text for Alice..."
+    val plaintext = "Signed text for Alice...".getBytes("UTF-8")
     
     println("Alice")
-    println("  PlainText: " + plaintext)
+    println("  PlainText: " + new String(plaintext, "UTF-8"))
     println("  Private: " + prvAlice.keyToBytes.encode)
     println("  Public: " + pubAlice.keyToBytes.encode)
     
