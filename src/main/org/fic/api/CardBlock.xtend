@@ -10,18 +10,22 @@ import java.util.List
 import java.util.Map
 import java.util.UUID
 import org.eclipse.xtend.lib.annotations.Accessors
-import org.fic.EllipticCurveHelper
+import org.fic.crypto.KeyLoaderHelper
+import org.fic.crypto.SignatureHelper
 
-import static extension org.fic.EllipticCurveHelper.*
+import static extension org.fic.crypto.Base64Helper.*
+import static extension org.fic.crypto.KeyLoaderHelper.*
 
 class CardBlock extends JsonBase {
-  public static val ecHelper = new EllipticCurveHelper
-  
   @JsonIgnore var sealed = false    // sealed == true means the card is sealed from changes
+  
+  @JsonIgnore var SignatureHelper signHelper
+  @JsonIgnore var KeyLoaderHelper keyLoaderHelper
+  
   @JsonIgnore var byte[] signature  // signature
   @JsonIgnore var PublicKey pubKey  // public key
   
-  public val String version = "1.0"
+  @Accessors(PUBLIC_GETTER) var Map<String, String> header
   
   // (uuid, name, key) is always unique
   @Accessors(PUBLIC_GETTER) var String uuid // UUID.randomUUID.toString
@@ -29,20 +33,32 @@ class CardBlock extends JsonBase {
   @Accessors(PUBLIC_GETTER) var String key  // base-64 encoded public key
   
   //additional card info attributes 
-  @Accessors(PUBLIC_GETTER) var Map<String, Object> attributes
-  @Accessors(PUBLIC_GETTER) var List<CardTrustedLink> trustedLinks
+  @Accessors(PUBLIC_GETTER) var Map<String, Object> info
+  @Accessors(PUBLIC_GETTER) var List<CardTrustedLink> links
   
   // creating new card block
-  private new() { /* used for JSON load only */}
+  private new() { /* used for JSON load only */ }
+  
   new(String name, PublicKey pubKey) {
+    this(name, pubKey, "prime256v1", "SHA256withECDSA")
+  }
+  
+  new(String name, PublicKey pubKey, String curveName, String signName) {
+    this.signHelper = new SignatureHelper(signName)
+    this.header = new HashMap<String, String> => [
+      put("version",  "1.0")
+      put("curve", curveName)
+      put("sign", signName)
+    ]
+    
     this.pubKey = pubKey
     
     this.uuid = UUID.randomUUID.toString
     this.name = name
     this.key = pubKey.keyToBytes.encode
     
-    this.attributes = new HashMap<String, Object>
-    this.trustedLinks = new ArrayList<CardTrustedLink>
+    this.info = new HashMap<String, Object>
+    this.links = new ArrayList<CardTrustedLink>
   }
   
   def void sign(PrivateKey prvKey) {
@@ -51,9 +67,9 @@ class CardBlock extends JsonBase {
     
     val rawJson = toJson.getBytes("UTF-8")
     sealed = true
-    signature = ecHelper.doECDSA(prvKey, rawJson)
+    signature = signHelper.sign(prvKey, rawJson)
     
-    val isOk = ecHelper.verifyECDSA(pubKey, rawJson, signature)
+    val isOk = signHelper.verifySignature(pubKey, rawJson, signature)
     if (!isOk)
       throw new RuntimeException("Failed in signature verification! On signing card.")
   }
@@ -63,7 +79,7 @@ class CardBlock extends JsonBase {
     if (!sealed)
       throw new RuntimeException("Can't verify signature. It's not sealed!")
     
-    return ecHelper.verifyECDSA(pubKey, toJson.getBytes("UTF-8"), signature)
+    return signHelper.verifySignature(pubKey, toJson.getBytes("UTF-8"), signature)
   }
   
   def ByteBuffer retrieve() {
@@ -88,23 +104,22 @@ class CardBlock extends JsonBase {
      * <rest> -> signature
      */
     
-    // load json
     val rawJson = newByteArrayOfSize(data.int)
     data.get(rawJson)
     val json = new String(rawJson, "UTF-8")
     
     // load into object
-    val card = mapper.readValue(json, CardBlock)
-    card.pubKey = ecHelper.loadPublicKey(card.key.decode)
-    
-    // load signature
-    card.signature = newByteArrayOfSize(data.remaining)
-    data.get(card.signature)
-    
-    card.sealed = true
-    if (!card.isSignOk)
-      throw new RuntimeException("Failed in signature verification! On loading card data.")
-    
-    return card
+    return mapper.readValue(json, CardBlock) => [
+      keyLoaderHelper = new KeyLoaderHelper(header.get("curve"))
+      signHelper = new SignatureHelper(header.get("sign"))
+      
+      pubKey = keyLoaderHelper.loadPublicKey(key.decode)
+      signature = newByteArrayOfSize(data.remaining)
+      data.get(signature)
+      
+      sealed = true
+      if (!isSignOk)
+        throw new RuntimeException("Failed in signature verification! On loading card data.")
+    ]
   }
 }

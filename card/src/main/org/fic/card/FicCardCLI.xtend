@@ -1,10 +1,8 @@
 package org.fic.card
 
-import org.fic.EllipticCurveHelper
-import static extension org.fic.EllipticCurveHelper.*
+import picocli.CommandLine
 import picocli.CommandLine.Command
 import picocli.CommandLine.Option
-import picocli.CommandLine
 
 @Command(
   name = "fic-card-cli", footer = "Copyright(c) 2017",

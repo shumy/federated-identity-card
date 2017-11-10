@@ -1,15 +1,26 @@
 package org.fic
 
+import java.security.Security
 import java.time.LocalDate
 import java.time.Month
 import java.time.format.DateTimeFormatter
 import java.util.Arrays
+import org.bouncycastle.jce.provider.BouncyCastleProvider
 import org.fic.api.CardBlock
+import org.fic.crypto.CipherHelper
+import org.fic.crypto.KeyPairHelper
+import org.fic.crypto.SignatureHelper
 
-import static extension org.fic.EllipticCurveHelper.*
+import static extension org.fic.crypto.Base64Helper.*
+import static extension org.fic.crypto.DiffieHellmanHelper.*
+import static extension org.fic.crypto.KeyLoaderHelper.*
+
+//import static extension org.fic.EllipticCurveHelper.*
 
 class MainTest {
   def static void main(String[] args) {
+    Security.addProvider(new BouncyCastleProvider)
+    
     println("----testECDSA----")
     testECDSA
     
@@ -24,9 +35,9 @@ class MainTest {
   }
   
   def static testCardBlock() {
-    val alexKp = CardBlock.ecHelper.generateKeyPair
+    val alexKp = new KeyPairHelper().genKeyPair
     val newCard = new CardBlock("Alex Name", alexKp.public) => [
-      attributes.put("birthday", LocalDate.of(1981, Month.JANUARY, 28).format(DateTimeFormatter.ISO_LOCAL_DATE))
+      info.put("birthday", LocalDate.of(1981, Month.JANUARY, 28).format(DateTimeFormatter.ISO_LOCAL_DATE))
       sign(alexKp.private)
     ]
     
@@ -54,9 +65,9 @@ class MainTest {
   }
   
   def static testECDH() {
-    val ecHelper = new EllipticCurveHelper
-    val kp1 = ecHelper.generateKeyPair
-    val kp2 = ecHelper.generateKeyPair
+    val kpHelper = new KeyPairHelper
+    val kp1 = kpHelper.genKeyPair
+    val kp2 = kpHelper.genKeyPair
     
     val prvAlice = kp1.private
     val pubAlice = kp1.public
@@ -73,8 +84,8 @@ class MainTest {
     println("  Public: " + pubBob.keyToBytes.encode)
         
     //key agreement
-    val k1 = ecHelper.doECDH(prvAlice, pubBob)
-    val k2 = ecHelper.doECDH(prvBob, pubAlice)
+    val k1 = prvAlice.keyAgreement(pubBob)
+    val k2 = prvBob.keyAgreement(pubAlice)
     
     val k1Hex = k1.encode
     val k2Hex = k2.encode
@@ -87,9 +98,9 @@ class MainTest {
   }
   
   def static testECDSA() {
-    val ecHelper = new EllipticCurveHelper
-    val kp1 = ecHelper.generateKeyPair
-    val kp2 = ecHelper.generateKeyPair
+    val kpHelper = new KeyPairHelper
+    val kp1 = kpHelper.genKeyPair
+    val kp2 = kpHelper.genKeyPair
     
     val prvAlice = kp1.private
     val pubAlice = kp1.public
@@ -101,13 +112,14 @@ class MainTest {
     println("  Public: " + pubAlice.keyToBytes.encode)
     
     println("")
-    val sig = ecHelper.doECDSA(prvAlice, plaintext)
+    val signHelper = new SignatureHelper()
+    val sig = signHelper.sign(prvAlice, plaintext)
     println('''  Signature («sig.length» bytes): «sig.encode»''')
     
-    val expectedTrue = ecHelper.verifyECDSA(pubAlice, plaintext, sig)
+    val expectedTrue = signHelper.verifySignature(pubAlice, plaintext, sig)
     println("  Signature OK => " + expectedTrue)
     
-    val expectedFalse = ecHelper.verifyECDSA(kp2.public, plaintext, sig)
+    val expectedFalse = signHelper.verifySignature(kp2.public, plaintext, sig)
     println("  Signature OK => " + expectedFalse)
   }
 }

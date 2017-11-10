@@ -1,4 +1,4 @@
-package org.fic
+package org.fic.crypto
 
 import javax.crypto.spec.SecretKeySpec
 import javax.crypto.spec.IvParameterSpec
