@@ -1,11 +1,9 @@
 package org.fic
 
-import java.security.Security
 import java.time.LocalDate
 import java.time.Month
 import java.time.format.DateTimeFormatter
 import java.util.Arrays
-import org.bouncycastle.jce.provider.BouncyCastleProvider
 import org.fic.api.CardBlock
 import org.fic.api.TrustedLink
 import org.fic.crypto.CipherHelper
@@ -16,12 +14,8 @@ import static extension org.fic.crypto.Base64Helper.*
 import static extension org.fic.crypto.DiffieHellmanHelper.*
 import static extension org.fic.crypto.KeyLoaderHelper.*
 
-//import static extension org.fic.EllipticCurveHelper.*
-
 class MainTest {
   def static void main(String[] args) {
-    Security.addProvider(new BouncyCastleProvider)
-    
     println("----testECDSA----")
     testECDSA
     
@@ -39,7 +33,7 @@ class MainTest {
     val alexKp = new KeyPairHelper().genKeyPair
     val newCard = new CardBlock(alexKp.public) => [
       info.put("birthday", LocalDate.of(1981, Month.JANUARY, 28).format(DateTimeFormatter.ISO_LOCAL_DATE))
-      links.add(new TrustedLink("url.pt", "uuid-number", "pub-key-data"))
+      links.add(new TrustedLink("url.pt", "pub-key-data"))
       sign(alexKp.private)
     ]
     

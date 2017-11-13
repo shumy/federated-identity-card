@@ -4,12 +4,13 @@ import java.security.PrivateKey
 import java.security.PublicKey
 import java.security.Signature
 import org.eclipse.xtend.lib.annotations.FinalFieldsConstructor
+import org.fic.api.CryptoContext
 
 @FinalFieldsConstructor
 class SignatureHelper {
   val String sigName
   
-  new() { this("SHA256withECDSA") }
+  new() { this(CryptoContext.ctx.signName) }
   
   def sign(PrivateKey prvKey, byte[] plaintext) {
     val dsa = Signature.getInstance(sigName, "BC")

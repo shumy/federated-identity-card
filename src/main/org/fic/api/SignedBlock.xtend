@@ -20,7 +20,7 @@ class SignedBlock {
   @JsonIgnore var SignatureHelper signHelper
   @JsonIgnore var KeyLoaderHelper keyLoaderHelper
   
-  @JsonIgnore @Accessors(PUBLIC_GETTER) var sealed = false  // sealed == true means the card is sealed from changes
+  @JsonIgnore @Accessors(PUBLIC_GETTER) var signed = false  // signed == true means the card is sealed from changes
   @JsonIgnore var byte[] signature  // signature
   @JsonIgnore var PublicKey pubKey  // public key
   
@@ -42,29 +42,22 @@ class SignedBlock {
   }
   
   def void sign(PrivateKey prvKey) {
-    if (sealed)
-      throw new RuntimeException("Can't sign CardBlock. It's already sealed.")
+    if (signed)
+      throw new FicError(SignedBlock, "Can't sign CardBlock. It's already signed.", 1)
     
     val rawJson = jsonData
-    sealed = true
     signature = signHelper.sign(prvKey, rawJson)
     
     val isOk = signHelper.verifySignature(pubKey, rawJson, signature)
     if (!isOk)
-      throw new RuntimeException("Failed in signature verification! On signing card.")
-  }
-  
-  @JsonIgnore
-  def isSignatureOk() {
-    if (!sealed)
-      throw new RuntimeException("Can't verify signature. It's not sealed!")
+      throw new FicError(SignedBlock, "Failed in signature verification! On signing card.", 2)
     
-    return signHelper.verifySignature(pubKey, jsonData, signature)
+    signed = true
   }
   
   def ByteBuffer retrieve() {
-    if (!isSignatureOk)
-      throw new RuntimeException("Failed in signature verification! On retrieving data.")
+    if (!signed)
+      throw new FicError(SignedBlock, "Failed in signature verification! On retrieving data.", 3)
     
     val rawJson = jsonData
     val bufSize = 4 + rawJson.length + signature.length
@@ -92,9 +85,11 @@ class SignedBlock {
       t.signature = newByteArrayOfSize(data.remaining)
       data.get(t.signature)
       
-      t.sealed = true
-      if (!t.isSignatureOk)
-        throw new RuntimeException("Failed in signature verification! On loading data.")
+      val isOk = t.signHelper.verifySignature(t.pubKey, rawJson, t.signature)
+      if (!isOk)
+        throw new FicError(SignedBlock, "Failed in signature verification! On loading data.", 4)
+      
+      t.signed = true
     ]
   }
   
