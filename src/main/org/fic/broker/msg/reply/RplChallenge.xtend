@@ -9,6 +9,5 @@ class RplChallenge extends FMessage {
     data.put("sigc", sigChallenge)
   }
   
-  //base-64 signed challenge
-  def getSignedChallenge() { data.get("sigc") as String }
+  def getSignedChallenge() { data.get("sigc") as String } //base-64 signed challenge
 }

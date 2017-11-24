@@ -1,0 +1,55 @@
+# Component Nodes
+  FIC -> FI-Card
+  G   -> Gateway
+  TL  -> Trusted-Link
+  A   -> Application
+  *   -> FIC, TL, A
+
+# Challenge
+  challenge strings must be unique, random with a good size!
+
+# Flows
+  # <node> -[msg]-> <node> <optional(!) or mandatory, depends on existent request(?)>
+  
+  # Connect (Diffie-Hellman)
+    * -[req-key]-> G (with uuid and the active Pkey of the FIC)
+    * <-[rpl-key]- G (with the active Pkey of the Gateway)
+    
+    //this doesn't really confirm! Challenge can be forged by MITM!
+    //* -E[req-cha]-> G ! (optional challenge to confirm the gateway, similar to pairing) (MITM is not a really security issue)
+    //* <-E[rpl-cha]- G ?
+    
+  # Register (NEW or CANDIDATE)
+    FIC -[req-reg]-> G
+    FIC <-[ack]- G
+  
+  # Cancel
+    # Direct cancel by the card owner
+    FIC -[req-cnl]-> G
+    FIC <-[req-cha]- G
+    FIC -[rpl-cha]-> G
+    
+    # Cancel requests by trusted links
+    TL <-[req-cnl]-> G ! (needs some kind of challenge to confirm)
+    TL -[req-cnl-lnk]-> G
+    TL <-[ack]- G
+  
+  # Recover (needs a candidate)
+    TL <-[req-rec]- G (needs some kind of challenge to confirm)
+    TL -[req-rec-lnk]-> G
+    TL <-[ack]- G
+  
+  -------------------------------------APP-------------------------------------
+  # Search
+    * -[req-sch]-> G (fields and regex for the search)
+    * <-[rpl-sch]- G (search results)
+  
+  # Login (the challenge is bound to the web session, even if used by MITM it cannot hijack the web session)
+    A -[req-cha]-> FIC
+    A <-[rpl-cha]- FIC !
+    -> Evolve (only in case the key is canceled)
+    
+  # Evolve
+    G -[req-evl]-> A
+    G <-[ack]- A
+  
