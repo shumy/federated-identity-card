@@ -6,14 +6,17 @@
   *   -> FIC, TL, A
 
 # Challenge
-  challenge strings must be unique, random with a good size!
+  # challenge strings must be unique, random with a good size!
+  # challenge format -> <origin-uuid + origin-global-counter + random-string [ + 8-code]>
+  # the 8-code is just to avoid Apps annoying the FIC with forged challenges requests. The FIC app will ignore re-cha without the correct 8-code
 
 # Flows
   # <node> -[msg]-> <node> <optional(!) or mandatory, depends on existent request(?)>
   
-  # Connect (Diffie-Hellman)
-    * -[req-key]-> G (with uuid and the active Pkey of the FIC)
-    * <-[rpl-key]- G (with the active Pkey of the Gateway)
+  # Connect (the challenge is only to avoid fake routes, if some one connects with a UUID without the correct Pkey)
+    * -[req-con]-> G (with uuid and the active Pkey) (the actual Pkey used in the challenge depends on the card-chain status)
+    * <-[req-cha]- G (confirm the Pkey)
+    * -[rpl-cha]-> G
     
     //this doesn't really confirm! Challenge can be forged by MITM!
     //* -E[req-cha]-> G ! (optional challenge to confirm the gateway, similar to pairing) (MITM is not a really security issue)
@@ -45,7 +48,7 @@
     * <-[rpl-sch]- G (search results)
   
   # Login (the challenge is bound to the web session, even if used by MITM it cannot hijack the web session)
-    A -[req-cha]-> FIC
+    A -[req-cha]-> FIC (using the 8-code)
     A <-[rpl-cha]- FIC !
     -> Evolve (only in case the key is canceled)
     
