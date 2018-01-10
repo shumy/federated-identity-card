@@ -1,12 +1,13 @@
-package org.fic.card
+package org.fic.example
 
-import picocli.CommandLine
 import picocli.CommandLine.Command
 import picocli.CommandLine.Option
+import picocli.CommandLine
+import javafx.application.Application
 
 @Command(
-  name = "fic-card-cli", footer = "Copyright(c) 2017",
-  description = "FIC-CARD CLI Helper"
+  name = "fic-example", footer = "Copyright(c) 2017",
+  description = "FICP proof of concept application."
 )
 class RCommand {
   @Option(names = #["-h", "--help"], help = true, description = "Display this help and exit.")
@@ -16,7 +17,7 @@ class RCommand {
   public boolean stack
 }
 
-class FicCardCLI {
+class FicExample {
   def static void main(String[] args) {
     val cmd =  try {
       CommandLine.populateCommand(new RCommand, args)
@@ -30,6 +31,11 @@ class FicCardCLI {
         CommandLine.usage(new RCommand, System.out)
         return
       }
+      
+      //run UI application by default
+      println("Searching JavaFX at: " + System.getProperty("java.home"))
+      Application.launch(UIApp, args)
+      
     } catch (Throwable ex) {
       if (cmd.stack)
         ex.printStackTrace

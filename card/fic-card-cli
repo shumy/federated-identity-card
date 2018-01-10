@@ -1,1 +1,0 @@
-java -Dlogback.configurationFile=logback.xml -jar ./build/libs/card-0.1.0.jar "$@"

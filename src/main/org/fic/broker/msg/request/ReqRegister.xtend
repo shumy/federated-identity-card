@@ -7,13 +7,14 @@ class ReqRegister extends FMessage {
   public static val NEW = "new"
   public static val CANDIDATE = "cand"
   
-  new(String type, ByteBuffer cardBlock) {
-    super(REGISTER)
+  protected new() { /* used for JSON load only */ }
+  new(String from, String to, String reqType, ByteBuffer cardBlock) {
+    super(REQUEST, REGISTER, from, to)
     
-    data.put("type", type)
-    data.put("card", cardBlock)
+    body.put("type", reqType)
+    body.put("card", cardBlock)
   }
   
-  def getType() { data.get("type") as String }
-  def getCardBlock() { data.get("card") as ByteBuffer }
+  def getRequestType() { body.get("type") as String }
+  def getCardBlock() { body.get("card") as ByteBuffer }
 }

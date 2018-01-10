@@ -9,17 +9,17 @@ class ChainLink {
   package var boolean active = false
   
   package val CardBlock card
-  package val forks = new LinkedList<ChainLink>
   package val crLinks = new LinkedList<CRLink>
 }
 
 @FinalFieldsConstructor
 class CardChain {
   val String uuid
+  
+  val chain = new LinkedList<ChainLink>
   val candidates = new HashMap<String, CardBlock> //recover candidates
   
-  val ChainLink head
-  var ChainLink current
+  var ChainLink current = null
   
   // create a card chain with the registration card
   new(CardBlock regCard) {
@@ -29,10 +29,12 @@ class CardChain {
     if (regCard.uuid != regCard.key)
       throw new FicError(CardChain, "The registration card must have the uuid == key!", 2)
     
-    uuid = regCard.key
-    head = new ChainLink(regCard)
-    current = head
+    val head = new ChainLink(regCard)
     
+    uuid = regCard.key
+    chain.add(head)
+    
+    current = head
     current.active = true
   }
   
@@ -129,7 +131,8 @@ class CardChain {
       if (candidateCounters.get(candidate) === current.card.links.length) {
         //all good, evolve by recovering
         val nextLink = new ChainLink(candidates.get(candidate))
-        current.forks.add(nextLink)
+        chain.add(nextLink)
+        
         current = nextLink
         current.active = true
         

@@ -1,9 +1,13 @@
 dependencies {
+  compile project(':')
+  
   compile 'info.picocli:picocli:1.0.1'
+  compile files(System.getProperty("java.home") + '/lib/ext/jfxrt.jar')
 }
 
 jar {
   manifest {
-    attributes 'Class-Path': configurations.compile.collect { '../../../libs/' + it.getName() }.join(' ')
+    attributes 'Main-Class': 'org.fic.example.FicExample',
+      'Class-Path': configurations.compile.collect { '../../../libs/' + it.getName() }.join(' ')
   }
 }

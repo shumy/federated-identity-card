@@ -11,7 +11,7 @@ allprojects {
   group 'com.github.shumy'
   version '0.1.0'
   
-  defaultTasks 'jar'
+  defaultTasks 'assemble'
   
   repositories {
     jcenter()
@@ -45,6 +45,12 @@ allprojects {
         'Built-By': 'micaelpedrosa@gmail.com'
     }
   }
+  
+  test {
+    testLogging {
+      showStandardStreams = true
+    }
+  }
 }
 
 jar {
@@ -54,7 +60,7 @@ jar {
   }
 }
 
-task copyJar(type: Copy) {
+task copyEndpointLib(type: Copy) {
   from jar
   into "$projectDir/libs"
 }
@@ -64,5 +70,4 @@ task export(type: Copy) {
   from configurations.runtime
 }
 
-// build dependencies
-build.dependsOn copyJar
+assemble.dependsOn copyEndpointLib

@@ -3,11 +3,12 @@ package org.fic.broker.msg.reply
 import org.fic.broker.msg.FMessage
 
 class RplChallenge extends FMessage {
-  new(String sigChallenge) {
-    super(REPLY_CHALLENGE)
+  protected new() { /* used for JSON load only */ }
+  new(String from, String to, String sigChallenge) {
+    super(REPLY, CHALLENGE, from, to)
     
-    data.put("sigc", sigChallenge)
+    body.put("sigc", sigChallenge)
   }
   
-  def getSignedChallenge() { data.get("sigc") as String } //base-64 signed challenge
+  def getSignedChallenge() { body.get("sigc") as String } //base-64 signed challenge
 }
