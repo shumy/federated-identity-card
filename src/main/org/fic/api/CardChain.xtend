@@ -21,6 +21,7 @@ class CardChain {
   
   var ChainLink current = null
   
+  def isActive() { current.active }
   def getCard() { current.card }
   
   // create a card chain with the registration card

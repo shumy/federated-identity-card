@@ -7,24 +7,23 @@ import org.fic.broker.msg.FMessage
 
 class RplAck extends FMessage {
   //reply with success:
-  public static val OK = 0                          //OK ack
+  public static val OK = 0                                  //OK ack
   
   //generic reply error codes:
-  public static val UNKNOWN = -1                    //e.g for internal server errors
-  public static val TIMEOUT = -2                    //for request timeouts
-  public static val SIGNATURE = -3                  //e.g reply with an invalid signature
-  public static val NO_CHAIN = -4                   //e.g non existent card-chain
+  public static val UNKNOWN = -1                            //e.g for internal server errors
+  public static val TIMEOUT = -2                            //for request timeouts
+  public static val SIGNATURE = -3                          //e.g reply with an invalid signature
+  
+  public static val NO_CHAIN = -4                           //non existent card-chain
+  public static val CHAIN_ACTIVE = -5                       //card-chain active when inactive chain is required
+  public static val CHAIN_INACTIVE = -6                     //card-chain inactive when active chain is required
   
   //Challenge errors:
-  public static val CHA_INACTIVE_CARD = 1                   //when inactive CardBlock
-  public static val CHA_NO_SYNC = 2                         //out of sync, needs to evolve
-  
-  //Subscribe errors:
-  public static val SUB_NO_ACTIVE_CARD = 101                //when no active card-chain found
+  public static val CHA_NO_SYNC = 1                         //out of sync, needs to evolve
+  public static val CHA_UNSUPPORTED = 2                     //encryption mode not supported
   
   //Register errors:
   public static val REG_EXISTENT_CARD = 201                 //already existent card in the card-chain
-  public static val REG_CAND_NOT_ACCEPTED = 202             //candidate not accepted, the card-block is in the active state
   
   //Cancel/Recover errors:
   public static val CR_NOT_FOUND = 301                      //no card-block or t-link found.
@@ -42,15 +41,15 @@ class RplAck extends FMessage {
       case UNKNOWN: "Unknown error!"
       case TIMEOUT: "Timeout error!"
       case SIGNATURE: "Signature error!"
+      
       case NO_CHAIN: "Non existent card-chain!"
+      case CHAIN_ACTIVE: "CardChain is active, when inactive state is required!"
+      case CHAIN_INACTIVE: "CardChain is inactive, when active state is required!"
       
-      case CHA_INACTIVE_CARD: "Inactive card-block."
       case CHA_NO_SYNC: "Out of sync, needs to evolve."
-      
-      case SUB_NO_ACTIVE_CARD: "No active card-chain found."
+      case CHA_UNSUPPORTED: "Unsupported encryption mode."
       
       case REG_EXISTENT_CARD: "Already existent card-block in the card-chain."
-      case REG_CAND_NOT_ACCEPTED: "Candidate not accepted, the card-block is in the active state."
       
       case CR_NOT_FOUND: "No card-block or t-link found."
       

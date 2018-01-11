@@ -112,6 +112,7 @@ class InMemoryGateway {
     val chain = chains.get(loadedCard.uuid)
     if (msg.body.type == ReqRegister.NEW) {
       if (chain !== null) {
+        // card-chain already exists!
         reply(chUUID, msg.id, new RplAck(card.block.key, msg.from, RplAck.REG_EXISTENT_CARD))
         return
       }
@@ -119,24 +120,37 @@ class InMemoryGateway {
       chains.put(loadedCard.uuid, new CardChain(loadedCard))
     } else {
       if (chain === null) {
+        // non existent card-chain
         reply(chUUID, msg.id, new RplAck(card.block.key, msg.from, RplAck.NO_CHAIN))
         return
       }
       
-      //TODO: verify if the chain is inactive?
+      if (chain.active) {
+        // candidate not accepted, card-chain is still active!
+        reply(chUUID, msg.id, new RplAck(card.block.key, msg.from, RplAck.CHAIN_ACTIVE))
+        return
+      }
+      
       chain.addCandidate(loadedCard)
     }
     
+    // card-block registered with success
     reply(chUUID, msg.id, new RplAck(card.block.key, msg.from, RplAck.OK))
   }
   
   private def void subscribe(String chUUID, ReqSubscribe msg) {
     println('''  GT-SUBSCRIBE: «chUUID» => «msg.from»''')
-    //TODO: verify if the chain is active?
     
     val chain = chains.get(msg.from)
     if (chain === null) {
+      // non existent card-chain
       reply(chUUID, msg.id, new RplAck(card.block.key, msg.from, RplAck.NO_CHAIN))
+      return
+    }
+    
+    if (!chain.active) {
+      // subscription not accepted, card-chain is not active! Needs to recover.
+      reply(chUUID, msg.id, new RplAck(card.block.key, msg.from, RplAck.CHAIN_INACTIVE))
       return
     }
     
@@ -144,9 +158,10 @@ class InMemoryGateway {
     val nonce = UUID.randomUUID.toString
     val secretInfo = CipherHelper.createSecret(nonce, card.prvKey, chain.card.pubKey)
     
-    //request challenge...
+    //TODO: remove on timeout
     pendingChallenges.put(msg.from, nonce)
     
+    //request challenge...
     println('''  GT-ENCRYPT-CHALLENGE: (nonce=«nonce», secret=«secretInfo.secret»)''')
     reply(chUUID, msg.id, new ReqChallenge(card.block.key, msg.from, secretInfo.secret, secretInfo.mode))
   }

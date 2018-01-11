@@ -48,6 +48,7 @@ class FICard extends IFicNode {
   
   private def void challenge(ReqChallenge msg) {
     //TODO: request challenge authorization?
+    //TODO: no encryption mode supported?
     
     val secretInfo = new SecretInfo(msg.body.secret, msg.body.mode)
     val nonce = CipherHelper.decodeSecret(secretInfo, card.prvKey, msg.from)
