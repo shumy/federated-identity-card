@@ -1,14 +1,14 @@
 package org.fic.broker.msg.request
 
+import java.util.Map
 import org.fic.broker.msg.FMessage
-import org.fic.broker.msg.SecretStruct
 
 class ReqCancelRecover extends FMessage {
   public static val CANCEL = "cnl"
   public static val RECOVER = "rec"
   
   protected new() { /* used for JSON load only */ }
-  new(String from, String to, String reqType, String uuid, String prev, String next, SecretStruct secret) {
+  new(String from, String to, String reqType, String uuid, String prev, String next, String secret, Map<String, String> mode) {
     super(REQUEST, CR, from, to)
     
     body.put("type", reqType)
@@ -18,11 +18,4 @@ class ReqCancelRecover extends FMessage {
     
     body.put("secret", secret)
   }
-  
-  def getRequestType() { body.get("type") as String }
-  def getUuid() { body.get("uuid") as String }
-  def getPrev() { body.get("prev") as String }
-  def getNext() { body.get("next") as String }
-  
-  def getSecret() { body.get("secret") as SecretStruct }
 }

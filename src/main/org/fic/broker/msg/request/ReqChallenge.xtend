@@ -1,19 +1,29 @@
 package org.fic.broker.msg.request
 
+import com.fasterxml.jackson.annotation.JsonInclude
+import com.fasterxml.jackson.annotation.JsonInclude.Include
+import java.util.Map
+import org.eclipse.xtend.lib.annotations.Accessors
 import org.fic.broker.msg.FMessage
-import org.fic.broker.msg.SecretStruct
 
 class ReqChallenge extends FMessage {
   protected new() { /* used for JSON load only */ }
-  new(String from, String to, String phase, SecretStruct secret, String block) {
+  new(String from, String to, String secret, Map<String, String> mode) {
     super(REQUEST, CHALLENGE, from, to)
-    
-    body.put("phase", phase)
-    body.put("secret", secret)
-    body.put("block", block)
+    this.body = new Body(secret, mode) 
   }
   
-  def getPhase() { body.get("phase") as String }
-  def getSecret() { body.get("secret") as SecretStruct }
-  def getBlock() { body.get("block") as String }
+  @Accessors(PUBLIC_GETTER) var Body body
+  
+  @JsonInclude(Include.NON_NULL)
+  static class Body {
+    protected new() { /* used for JSON load only */ }
+    new(String secret, Map<String, String> mode) {
+      this.secret = secret
+      this.mode = mode
+    }
+    
+    @Accessors(PUBLIC_GETTER) var String secret
+    @Accessors(PUBLIC_GETTER) var Map<String, String> mode
+  }
 }

@@ -8,12 +8,14 @@ import org.fic.broker.msg.request.ReqRegister
 import org.fic.crypto.CardHelper
 import org.fic.crypto.CardInfo
 
-class FIApplication extends IFicNode {
+class FITrustedLink extends IFicNode {
+  static var counter = 1
+  
   @Accessors(PUBLIC_GETTER) var CardInfo card
   
   new(IBroker broker) {
     super(broker)
-    val cardInfo = #{ "name" -> "FIApplication" }
+    val cardInfo = #{ "name" -> "FITrustedLink-" + counter++ }
     
     card = CardHelper.create(cardInfo)
     println('''CREATED-CARD: (uuid=«card.block.uuid», info=«card.block.info»)''')

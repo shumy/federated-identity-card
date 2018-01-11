@@ -6,11 +6,17 @@ import java.security.Signature
 import org.eclipse.xtend.lib.annotations.FinalFieldsConstructor
 import org.fic.api.CryptoContext
 
+import static extension org.fic.crypto.Base64Helper.*
+
 @FinalFieldsConstructor
 class SignatureHelper {
-  val String sigName
+  public val String sigName
   
   new() { this(CryptoContext.ctx.signName) }
+  
+  def sign(PrivateKey prvKey, String plaintext) {
+    return sign(prvKey, plaintext.bytes).encode
+  }
   
   def sign(PrivateKey prvKey, byte[] plaintext) {
     val dsa = Signature.getInstance(sigName, "BC")
@@ -18,6 +24,10 @@ class SignatureHelper {
     dsa.update(plaintext)
     
     return dsa.sign
+  }
+  
+  def verifySignature(PublicKey pubKey, String plaintext, String signature) {
+    return verifySignature(pubKey, plaintext.bytes, signature.decode)
   }
   
   def verifySignature(PublicKey pubKey, byte[] plaintext, byte[] signature) {  

@@ -1,6 +1,9 @@
 package org.fic.broker.msg.request
 
+import com.fasterxml.jackson.annotation.JsonInclude
+import com.fasterxml.jackson.annotation.JsonInclude.Include
 import java.nio.ByteBuffer
+import org.eclipse.xtend.lib.annotations.Accessors
 import org.fic.broker.msg.FMessage
 
 class ReqRegister extends FMessage {
@@ -8,13 +11,22 @@ class ReqRegister extends FMessage {
   public static val CANDIDATE = "cand"
   
   protected new() { /* used for JSON load only */ }
-  new(String from, String to, String reqType, ByteBuffer cardBlock) {
-    super(REQUEST, REGISTER, from, to)
-    
-    body.put("type", reqType)
-    body.put("card", cardBlock)
+  new(String from, String reqType, ByteBuffer cardBlock) {
+    super(REQUEST, REGISTER, from, null)
+    this.body = new Body(reqType, cardBlock)
   }
   
-  def getRequestType() { body.get("type") as String }
-  def getCardBlock() { body.get("card") as ByteBuffer }
+  @Accessors(PUBLIC_GETTER) var Body body
+  
+  @JsonInclude(Include.NON_NULL)
+  static class Body {
+    protected new() { /* used for JSON load only */ }
+    new(String type, ByteBuffer card) {
+      this.type = type
+      this.card = card
+    }
+    
+    @Accessors(PUBLIC_GETTER) var String type
+    @Accessors(PUBLIC_GETTER) var ByteBuffer card
+  }
 }

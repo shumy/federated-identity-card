@@ -1,9 +1,23 @@
 package org.fic.crypto
 
-import javax.crypto.spec.SecretKeySpec
-import javax.crypto.spec.IvParameterSpec
-import javax.crypto.Cipher
+import java.security.PrivateKey
+import java.security.PublicKey
 import java.security.SecureRandom
+import java.util.Arrays
+import java.util.Map
+import javax.crypto.Cipher
+import javax.crypto.spec.IvParameterSpec
+import javax.crypto.spec.SecretKeySpec
+import org.eclipse.xtend.lib.annotations.FinalFieldsConstructor
+import org.fic.crypto.KeyLoaderHelper
+
+import static extension org.fic.crypto.Base64Helper.*
+
+@FinalFieldsConstructor
+class SecretInfo {
+  public val String secret
+  public val Map<String, String> mode
+}
 
 class CipherHelper {
   val String cipherName
@@ -39,5 +53,39 @@ class CipherHelper {
     cipher.init(Cipher.DECRYPT_MODE, skeySpec, iv)
   
     return new String(cipher.doFinal(encrypted), "UTF-8")
+  }
+  
+  static def SecretInfo createSecret(String nonce, PrivateKey prvKey, PublicKey pubKey) {
+    //create secret...
+    val sharedKey = DiffieHellmanHelper.keyAgreement(prvKey, pubKey)
+    val sKey = Arrays.copyOfRange(sharedKey, 0, 16)
+    
+    val cipherHelper = new CipherHelper(sKey)
+    
+    val iv = cipherHelper.randomBytes(16)
+    val secret = cipherHelper.encrypt(iv, nonce).encode
+    
+    //create mode...
+    val mode = #{ "df" -> "ECDH", "suite" -> "AES/CBC/PKCS5PADDING", "curve" -> "secp384r1", "iv" -> iv.encode }
+    
+    return new SecretInfo(secret, mode)
+  }
+  
+  static def String decodeSecret(SecretInfo info, PrivateKey prvKey, String pubKeyEncoded) {
+    val klHelper = new KeyLoaderHelper(info.mode.get("curve"))
+    val pubKey = klHelper.loadPublicKey(pubKeyEncoded.decode)
+    
+    return decodeSecret(info, prvKey, pubKey)
+  }
+  
+  static def String decodeSecret(SecretInfo info, PrivateKey prvKey, PublicKey pubKey) {
+    val sharedKey = DiffieHellmanHelper.keyAgreement(prvKey, pubKey)
+    val sKey = Arrays.copyOfRange(sharedKey, 0, 16)
+    
+    val cipherHelper = new CipherHelper(sKey)
+    
+    val iv = info.mode.get("iv").decode
+    val secret = info.secret.decode
+    return cipherHelper.decrypt(iv, secret)
   }
 }

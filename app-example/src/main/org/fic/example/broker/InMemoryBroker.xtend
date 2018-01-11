@@ -1,80 +1,65 @@
 package org.fic.example.broker
 
 import com.fasterxml.jackson.databind.ObjectMapper
-import java.util.HashMap
+import java.util.HashSet
 import java.util.concurrent.atomic.AtomicLong
+import org.eclipse.xtend.lib.annotations.FinalFieldsConstructor
 import org.fic.broker.IBroker
 import org.fic.broker.msg.FMessage
-import org.fic.broker.msg.reply.RplAck
-import org.fic.broker.msg.reply.RplChallenge
-import org.fic.broker.msg.reply.RplEvolve
-import org.fic.broker.msg.reply.RplSearch
-import org.fic.broker.msg.request.ReqCRLink
-import org.fic.broker.msg.request.ReqCancelRecover
-import org.fic.broker.msg.request.ReqChallenge
-import org.fic.broker.msg.request.ReqEvolve
-import org.fic.broker.msg.request.ReqRegister
-import org.fic.broker.msg.request.ReqSearch
-import org.fic.broker.msg.request.ReqSubscribe
 
+@FinalFieldsConstructor
 class InMemoryBroker implements IBroker {
   package val next = new AtomicLong(1)
+  val InMemoryGateway gateway
   
   val mapper = new ObjectMapper
-  val channels = new HashMap<String, InMemoryChannel>
+  val channels = new HashSet<InMemoryChannel>
+  
   var (String)=>void onMessage = null
   
   def logTo((String)=>void onMessage) {
     this.onMessage = onMessage
   }
   
-  override connect(String url, String uuid) {
-    val ch = new InMemoryChannel(uuid, this)
-    channels.put(uuid, ch)
+  override connect(String url) {
+    // Simulates gateway connection...
+    val ch = new InMemoryChannel(this)
+    gateway.connect(ch.chUUID)[
+      // Simulates receiving from the gateway...
+      received(ch, it)
+    ]
+    
     return ch
   }
   
-  package def remove(String uuid) {
-    channels.remove(uuid)
+  package def void disconnect(InMemoryChannel channel) {
+    // Simulates gateway disconnection...
+    channels.remove(channel)
+    gateway.disconnect(channel.chUUID)
   }
   
-  package def void publish(FMessage msg) {
-    //serialize => log => deserialize => route
-    
+  package def void publish(InMemoryChannel ch, FMessage msg) {
+    // Simulates publishing to the gateway...
     val json = mapper.writeValueAsString(msg)
     onMessage?.apply(json)
+    
+    //if this was a real network transmission, the message would be sent here.
     println('''PUBLISH: «json»''')
+    gateway.publish(ch.chUUID, json)
+  }
+  
+  private def void received(InMemoryChannel channel, String json) {
+    //if this was a real network transmission, the message would be received here.
+    println('''RECEIVED: «json»''')
     
     val tree = mapper.readTree(json)
     val mType = tree.get("type").asText
     val mCmd = tree.get("cmd").asText
-    val clazz = selectClass(mType, mCmd)
+    val mClass = FMessage.select(mType, mCmd)
     
-    val fMsg = mapper.treeToValue(tree, clazz) as FMessage
+    println('''  DECODED: («mType», «mCmd», «mClass.simpleName»)''')
+    val fMsg = mapper.treeToValue(tree, mClass) as FMessage
     
-    println('''ROUTED: «fMsg.class.simpleName» => («fMsg.id», «fMsg.from», «fMsg.to», «fMsg.type»-«fMsg.cmd»)''')
-    val route = channels.get(msg.to)
-    route?.receive(fMsg)
-  }
-  
-  private def Class<?> selectClass(String type, String cmd) {
-    if (type == FMessage.REQUEST) {
-      switch (cmd) {
-        case FMessage.CHALLENGE: return ReqChallenge
-        case FMessage.SUBSCRIBE: return ReqSubscribe
-        case FMessage.REGISTER: return ReqRegister
-        case FMessage.CR: return ReqCancelRecover
-        case FMessage.CR_LINK: return ReqCRLink
-        case FMessage.SEARCH: return ReqSearch
-        case FMessage.EVOLVE: return ReqEvolve
-      }
-    } else if (type == FMessage.REPLY) {
-      switch (cmd) {
-        case FMessage.ACK: return RplAck
-        case FMessage.CHALLENGE: return RplChallenge
-        case FMessage.SEARCH: return RplSearch
-        case FMessage.EVOLVE: return RplEvolve
-      }
-    }
+    channel.received(fMsg)
   }
 }

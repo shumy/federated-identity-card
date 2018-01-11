@@ -8,14 +8,11 @@ class CryptoContext {
   
   @Accessors
   static class Context {
-    String curveName
-    String signName
+    public val String curveName
+    public  val String signName
   }
   
-  static val defaultContext = new Context => [
-    curveName = "secp384r1"
-    signName = "SHA3-256withECDSA"
-  ]
+  static val defaultContext = new Context("secp384r1", "SHA3-256withECDSA")
   
   static val context = new ThreadLocal<Context> {
     override protected initialValue() {

@@ -1,5 +1,6 @@
 package org.fic.example.broker
 
+import java.util.UUID
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
@@ -10,17 +11,17 @@ import org.fic.broker.msg.reply.RplAck
 
 @FinalFieldsConstructor
 class InMemoryChannel implements IChannel {
-  val String uuid
-  val InMemoryBroker broker
+  public val String chUUID = UUID.randomUUID.toString
   
+  val InMemoryBroker broker
   val executor = Executors.newSingleThreadScheduledExecutor
   val replyListeners = new ConcurrentHashMap<Long, (FMessage)=>void>
   
   var (FMessage)=>void onMessage = null
   
-  package def void receive(FMessage msg) {
+  package def void received(FMessage msg) {
     if (msg.type == FMessage.REQUEST && onMessage !== null) {
-      onMessage.apply(msg)  
+      onMessage.apply(msg)
     } else if (msg.type == FMessage.REPLY) {
       val rpl = replyListeners.remove(msg.id)
       rpl?.apply(msg)
@@ -28,22 +29,25 @@ class InMemoryChannel implements IChannel {
   }
   
   override send(FMessage msg) {
-    broker.publish(msg)
+    send(msg, null)
   }
   
   override send(FMessage msg, (FMessage)=>void onReply) {
     msg.id = broker.next.andIncrement
-    replyListeners.put(msg.id, onReply)
     
-    //timeout handler...
-    executor.schedule([
-      val rpl = replyListeners.remove(msg.id)
-      rpl?.apply(new RplAck(msg.to, msg.from, RplAck.TIMEOUT))
+    if (onReply !== null) {
+      replyListeners.put(msg.id, onReply)
       
-      return null
-    ], 5, TimeUnit.SECONDS)
+      //timeout handler...
+      executor.schedule([
+        val rpl = replyListeners.remove(msg.id)
+        rpl?.apply(new RplAck(msg.to, msg.from, RplAck.TIMEOUT))
+        
+        return null
+      ], 5, TimeUnit.SECONDS)
+    }
     
-    broker.publish(msg)
+    broker.publish(this, msg)
   }
   
   override onReceive((FMessage)=>void onMessage) {
@@ -52,7 +56,7 @@ class InMemoryChannel implements IChannel {
   
   override disconnect() {
     executor.shutdown()
-    broker.remove(uuid)
+    broker.disconnect(this)
   }
   
   override onDisconnect((Throwable)=>void onDisconnect) {

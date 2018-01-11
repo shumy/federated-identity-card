@@ -20,9 +20,9 @@ class SignedBlock {
   @JsonIgnore var SignatureHelper signHelper
   @JsonIgnore var KeyLoaderHelper keyLoaderHelper
   
-  @JsonIgnore @Accessors(PUBLIC_GETTER) var signed = false  // signed == true means the card is sealed from changes
-  @JsonIgnore var byte[] signature  // signature
-  @JsonIgnore var PublicKey pubKey  // public key
+  @JsonIgnore @Accessors(PUBLIC_GETTER) var signed = false    // signed == true means the card is sealed from changes
+  @JsonIgnore @Accessors(PUBLIC_GETTER) var byte[] signature  // signature
+  @JsonIgnore @Accessors(PUBLIC_GETTER) var PublicKey pubKey  // public key
   
   @Accessors(PUBLIC_GETTER) var Map<String, String> header
   @Accessors(PUBLIC_GETTER) var String key

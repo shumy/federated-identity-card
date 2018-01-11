@@ -21,6 +21,8 @@ class CardChain {
   
   var ChainLink current = null
   
+  def getCard() { current.card }
+  
   // create a card chain with the registration card
   new(CardBlock regCard) {
     if (!regCard.signed)

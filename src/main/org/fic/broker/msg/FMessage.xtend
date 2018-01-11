@@ -1,8 +1,22 @@
 package org.fic.broker.msg
 
+import com.fasterxml.jackson.annotation.JsonInclude
+import com.fasterxml.jackson.annotation.JsonInclude.Include
 import java.util.HashMap
 import org.eclipse.xtend.lib.annotations.Accessors
+import org.fic.broker.msg.reply.RplAck
+import org.fic.broker.msg.reply.RplChallenge
+import org.fic.broker.msg.reply.RplEvolve
+import org.fic.broker.msg.reply.RplSearch
+import org.fic.broker.msg.request.ReqCRLink
+import org.fic.broker.msg.request.ReqCancelRecover
+import org.fic.broker.msg.request.ReqChallenge
+import org.fic.broker.msg.request.ReqEvolve
+import org.fic.broker.msg.request.ReqRegister
+import org.fic.broker.msg.request.ReqSearch
+import org.fic.broker.msg.request.ReqSubscribe
 
+@JsonInclude(Include.NON_NULL)
 abstract class FMessage {
   // message types:
   public static val REQUEST = "req"
@@ -41,4 +55,25 @@ abstract class FMessage {
   
   //data with 1 level layer. Not a tree...
   protected val body = new HashMap<String, Object>
+  
+  public static def Class<? extends FMessage> select(String type, String cmd) {
+    if (type == REQUEST) {
+      switch (cmd) {
+        case CHALLENGE: return ReqChallenge
+        case SUBSCRIBE: return ReqSubscribe
+        case REGISTER: return ReqRegister
+        case CR: return ReqCancelRecover
+        case CR_LINK: return ReqCRLink
+        case SEARCH: return ReqSearch
+        case EVOLVE: return ReqEvolve
+      }
+    } else if (type == FMessage.REPLY) {
+      switch (cmd) {
+        case ACK: return RplAck
+        case CHALLENGE: return RplChallenge
+        case SEARCH: return RplSearch
+        case EVOLVE: return RplEvolve
+      }
+    }
+  }
 }

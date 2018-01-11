@@ -1,5 +1,8 @@
 package org.fic.broker.msg.reply
 
+import com.fasterxml.jackson.annotation.JsonInclude
+import com.fasterxml.jackson.annotation.JsonInclude.Include
+import org.eclipse.xtend.lib.annotations.Accessors
 import org.fic.broker.msg.FMessage
 
 class RplAck extends FMessage {
@@ -10,6 +13,7 @@ class RplAck extends FMessage {
   public static val UNKNOWN = -1                    //e.g for internal server errors
   public static val TIMEOUT = -2                    //for request timeouts
   public static val SIGNATURE = -3                  //e.g reply with an invalid signature
+  public static val NO_CHAIN = -4                   //e.g non existent card-chain
   
   //Challenge errors:
   public static val CHA_INACTIVE_CARD = 1                   //when inactive CardBlock
@@ -38,6 +42,7 @@ class RplAck extends FMessage {
       case UNKNOWN: "Unknown error!"
       case TIMEOUT: "Timeout error!"
       case SIGNATURE: "Signature error!"
+      case NO_CHAIN: "Non existent card-chain!"
       
       case CHA_INACTIVE_CARD: "Inactive card-block."
       case CHA_NO_SYNC: "Out of sync, needs to evolve."
@@ -52,11 +57,20 @@ class RplAck extends FMessage {
       case SCH_INVALID_QUERY: "Invalid query format: " + completeError
     }
     
-    body.put("code", code)
-    if (error !== null)
-      body.put("error", error)
+    this.body = new Body(code, error)
   }
   
-  def getCode() { body.get("code") as Integer }
-  def getError() { body.get("error") as String }
+  @Accessors(PUBLIC_GETTER) var Body body
+  
+  @JsonInclude(Include.NON_NULL)
+  static class Body {
+    protected new() { /* used for JSON load only */ }
+    new(Integer code, String error) {
+      this.code = code
+      this.error = error
+    }
+    
+    @Accessors(PUBLIC_GETTER) var Integer code
+    @Accessors(PUBLIC_GETTER) var String error
+  }
 }

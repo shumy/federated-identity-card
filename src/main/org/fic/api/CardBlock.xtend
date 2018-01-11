@@ -31,7 +31,7 @@ class CardBlock extends SignedBlock {
   @Accessors(PUBLIC_GETTER) var String uuid
   
   //additional card info attributes 
-  @Accessors(PUBLIC_GETTER) var Map<String, Object> info // other public information
+  @Accessors(PUBLIC_GETTER) var Map<String, String> info // other public information
   @Accessors(PUBLIC_GETTER) var List<TrustedLink> links
   
   private new() { /* used for JSON load only */ }
@@ -47,7 +47,7 @@ class CardBlock extends SignedBlock {
     super(pubKey, curveName, signName)
     
     this.uuid = uuid ?: key
-    this.info = new HashMap<String, Object>
+    this.info = new HashMap<String, String>
     this.links = new ArrayList<TrustedLink>
   }
   
