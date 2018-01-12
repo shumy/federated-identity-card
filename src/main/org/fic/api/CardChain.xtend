@@ -67,6 +67,9 @@ class CardChain {
   // the candidate should be added only when accepted by Trusted Links?
   // depends on the protocol result
   def void addCandidate(CardBlock newCard) {
+    if (current.active)
+      throw new FicError(CardChain, "The card chain must be inactive to accept candidates!", -1)
+    
     if (!newCard.signed)
       throw new FicError(CardChain, "The card chain only accepts signed cards!", 3)
     
@@ -170,7 +173,6 @@ class CardChain {
   
   private def isValidLink(String trustedKey, String crLinkKey) {
     //TODO: validation can be more complex than a simple equality, depends if the trusted chain can also evolve
-    println('''«trustedKey» == «crLinkKey»''')
     trustedKey == crLinkKey
   }
 }
