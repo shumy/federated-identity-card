@@ -9,6 +9,8 @@ import java.util.HashMap
 import java.util.List
 import java.util.Map
 import org.eclipse.xtend.lib.annotations.Accessors
+import com.fasterxml.jackson.annotation.JsonInclude.Include
+import com.fasterxml.jackson.annotation.JsonInclude
 
 class TrustedLink {
   public val String url // url where the Revoke/Recover protocol is available
@@ -27,6 +29,7 @@ class TrustedLink {
   }
 }
 
+@JsonInclude(Include.NON_NULL)
 class CardBlock extends SignedBlock {
   @Accessors(PUBLIC_GETTER) var String uuid
   

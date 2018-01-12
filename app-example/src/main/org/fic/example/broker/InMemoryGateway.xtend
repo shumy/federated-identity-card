@@ -6,6 +6,7 @@ import java.util.HashMap
 import java.util.Map
 import java.util.UUID
 import java.util.concurrent.ConcurrentHashMap
+import org.fic.api.CRLink
 import org.fic.api.CardBlock
 import org.fic.api.CardChain
 import org.fic.broker.msg.Ack
@@ -14,6 +15,7 @@ import org.fic.broker.msg.reply.ChainStruct
 import org.fic.broker.msg.reply.RplChallenge
 import org.fic.broker.msg.reply.RplEvolve
 import org.fic.broker.msg.reply.RplSearch
+import org.fic.broker.msg.request.ReqCRLink
 import org.fic.broker.msg.request.ReqChallenge
 import org.fic.broker.msg.request.ReqEvolve
 import org.fic.broker.msg.request.ReqRegister
@@ -67,7 +69,7 @@ class InMemoryGateway {
     if (to === null || to.asText == card.block.key)
       process(chUUID, tree)
     else
-      route(json, to.asText)
+      route(chUUID, tree, json, to.asText)
   }
   
   private def void reply(String chUUID, Long id, FMessage fMsg) {
@@ -80,12 +82,24 @@ class InMemoryGateway {
     ch?.apply(json)
   }
   
-  private def void route(String json, String to) {
+  private def void route(String rplChUUID, JsonNode tree, String json, String to) {
+    // Simulates sending message from component...
     println('''  GT-ROUTE-TO: «to»''')
     
     val chUUID = routes.get(to)
     if (chUUID !== null) {
-      // Simulates sending message from component...
+      
+      // if the chain is inactive, reply with CHA_NO_SYNC
+      val chain = chains.get(to)
+      if (!chain.active) {
+        val id = tree.get("id").asLong
+        val from = tree.get("from").asText
+        
+        println('''    Route inactive: «to»''')
+        reply(rplChUUID, id, new Ack(card.block.key, from, Ack.CHA_NO_SYNC))
+        return
+      }
+      
       val ch = channels.get(chUUID)
       ch.apply(json)
     } else
@@ -106,6 +120,7 @@ class InMemoryGateway {
         case FMessage.SUBSCRIBE: subscribe(chUUID, fMsg as ReqSubscribe)
         case FMessage.SEARCH: search(chUUID, fMsg as ReqSearch)
         case FMessage.EVOLVE: evolve(chUUID, fMsg as ReqEvolve)
+        case FMessage.CR_LINK: crLink(chUUID, fMsg as ReqCRLink)
       }
     
     if (mType == FMessage.REPLY)
@@ -217,6 +232,25 @@ class InMemoryGateway {
     val sign = sigHelper.sign(card.prvKey, nonce)
     
     reply(chUUID, msg.id, new RplEvolve(card.block.key, msg.from, chainStruct, sign, #{ "suite" -> sigName, "curve" -> "secp384r1" }))
+  }
+  
+  private def void crLink(String chUUID, ReqCRLink msg) {
+    val crLink = CRLink.load(msg.body.lnk)
+    val chain = chains.get(crLink.uuid)
+    if (chain === null) {
+      reply(chUUID, msg.id, new Ack(card.block.key, msg.from, Ack.NO_CHAIN))
+      return
+    }
+    
+    if (crLink.type === CRLink.CANCEL)
+      println('''  GT-CANCEL-LNK: (uuid=«crLink.uuid», prev=«crLink.prev»)''')
+    else
+      println('''  GT-CANCEL-LNK: (uuid=«crLink.uuid», prev=«crLink.prev», next=«crLink.next»)''')
+    
+    chain.addLink(crLink)
+    println('''  GT-CHAIN-STATUS: (uuid=«chain.uuid», current=«chain.card.uuid», active=«chain.active»)''')
+    
+    reply(chUUID, msg.id, new Ack(card.block.key, msg.from, Ack.OK))
   }
   
   private def void challengeReply(String chUUID, RplChallenge msg) {

@@ -31,27 +31,20 @@ class UIApp extends Application {
     
     val root = new FlowPane => [
       style = "-fx-background-color: DAE6F3;"
-      //prefWrapLength = 170
       
       children.add(new TabPane => [
-        prefWidth = 600
+        prefWidth = 1200
         
         tabs.add(new Tab => [
           text = "FI-Card"
           closable = false
           content = fiCard.content
         ])
-
+        
         tabs.add(new Tab => [
           text = "FI-Application"
           closable = false
           content = fiApp.content
-        ])
-                
-        tabs.add(new Tab => [
-          text = "FI-Gateway"
-          closable = false
-          content = fiGateway.content
         ])
         
         tabs.add(new Tab => [
@@ -64,6 +57,12 @@ class UIApp extends Application {
           text = "FI-TL-2"
           closable = false
           content = fitl_2.content
+        ])
+        
+        tabs.add(new Tab => [
+          text = "FI-Gateway"
+          closable = false
+          content = fiGateway.content
         ])
       ])
     ]

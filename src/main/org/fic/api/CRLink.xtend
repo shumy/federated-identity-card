@@ -1,10 +1,13 @@
 package org.fic.api
 
+import com.fasterxml.jackson.annotation.JsonInclude
+import com.fasterxml.jackson.annotation.JsonInclude.Include
 import java.nio.ByteBuffer
 import java.security.PublicKey
 import org.eclipse.xtend.lib.annotations.Accessors
 
 // Cancel / Recover
+@JsonInclude(Include.NON_NULL)
 class CRLink extends SignedBlock {
   public static val CANCEL = 1
   public static val RECOVER = 2
@@ -20,7 +23,7 @@ class CRLink extends SignedBlock {
   }
   
   static def newCancel(PublicKey pubKey, String uuidCard, String prevCard) {
-    CRLink.newCancel(pubKey, uuidCard, prevCard, "prime256v1", "SHA256withECDSA")
+    CRLink.newCancel(pubKey, uuidCard, prevCard, CryptoContext.ctx.curveName, CryptoContext.ctx.signName)
   }
   
   static def newCancel(PublicKey pubKey, String uuidCard, String prevCard, String curveName, String signName) {
@@ -32,7 +35,7 @@ class CRLink extends SignedBlock {
   }
   
   static def newRecover(PublicKey pubKey, String regLink, String prevCard, String nextCard) {
-    CRLink.newRecover(pubKey, regLink, prevCard, nextCard, "prime256v1", "SHA256withECDSA")
+    CRLink.newRecover(pubKey, regLink, prevCard, nextCard, CryptoContext.ctx.curveName, CryptoContext.ctx.signName)
   }
   
   static def newRecover(PublicKey pubKey, String uuidCard, String prevCard, String nextCard, String curveName, String signName) {

@@ -111,7 +111,6 @@ class CardChain {
         throw new FicError(CardChain, "The recover-link is not valid!", 9)
     }
     
-    
     current.crLinks.add(crLink)
     tryEvolve
   }
@@ -132,10 +131,9 @@ class CardChain {
     
     //cancel if all trusted links have cancel responses
     var counter = 0
-    for (tl : current.card.links)
-      for (crLink : current.crLinks)
-        if (crLink.type.bitwiseAnd(CRLink.CANCEL) === CRLink.CANCEL)
-          counter++
+    for (crLink : current.crLinks)
+      if (crLink.type === CRLink.CANCEL)
+        counter++
     
     if (counter === current.card.links.length)
       current.active = false
@@ -172,6 +170,6 @@ class CardChain {
   
   private def isValidLink(String trustedKey, String crLinkKey) {
     //TODO: validation can be more complex than a simple equality, depends if the trusted chain can also evolve
-    trustedKey === crLinkKey
+    trustedKey == crLinkKey
   }
 }

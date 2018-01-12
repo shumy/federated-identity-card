@@ -65,6 +65,7 @@ class FIApplication extends IFicNode {
   
   override content() {
     val txtLogin = new TextField => [
+      prefWidth = 400
       promptText = "Enter login name here..."
     ]
     
@@ -112,11 +113,7 @@ class FIApplication extends IFicNode {
     channel.send(rplMsg)
   }
   
-  def void tryLogin(String name, StringProperty logBox) {
-    logBox.value = "---Login START---"
-    logBox.value = logBox.value + "\n" + "Try login with: " + name
-    
-    // search login card in the local database...
+  private def void search(String name, StringProperty logBox) {
     if (logins.get(name) === null) {
       logBox.value = logBox.value + "\n" + "Card not found in local database..."
       logBox.value = logBox.value + "\n" + "Searching in gateway..."
@@ -146,33 +143,46 @@ class FIApplication extends IFicNode {
         }
       ]
     }
-    
-    val uuid = logins.get(name)
-    val chain = chains.get(uuid)
-    
-    //create secret...
-    val nonce = UUID.randomUUID.toString
-    val secretInfo = CipherHelper.createSecret(nonce, card.prvKey, chain.card.pubKey)
-    
-    //request challenge...
-    logBox.value = logBox.value + "\n" + '''Challenging: (uuid=«uuid», nonce=«nonce»)'''
-    val chMsg = new ReqChallenge(card.block.uuid, uuid, secretInfo.secret, secretInfo.mode)
-    channel.send(chMsg)[
-      if (cmd == FMessage.CHALLENGE) {
-        val rplCh = it as RplChallenge
-        val sigName = chain.card.header.get("sign")
-        val sigHelper = new SignatureHelper(sigName)
-        
-        val isValid = sigHelper.verifySignature(chain.card.pubKey, nonce, rplCh.body.sigc)
-        if (isValid) {
-          println("-----Try-login OK  -----")
-          logBox.value = logBox.value + "\n" + "---Login OK---"
-        }
-      }
-    ]
   }
   
-  def void tryEvolve(String uuid, String start) {
+  private def void tryLogin(String name, StringProperty logBox) {
+    logBox.value = "---Login START---"
+    logBox.value = logBox.value + "\n" + "Try login with: " + name
+    
+    // search login card...
+    search(name, logBox)
+    
+    val uuid = logins.get(name)
+    if (uuid !== null) {
+      val chain = chains.get(uuid)
+      
+      //create secret...
+      val nonce = UUID.randomUUID.toString
+      val secretInfo = CipherHelper.createSecret(nonce, card.prvKey, chain.card.pubKey)
+      
+      //request challenge...
+      logBox.value = logBox.value + "\n" + '''Challenging: (uuid=«uuid», nonce=«nonce»)'''
+      val chMsg = new ReqChallenge(card.block.uuid, uuid, secretInfo.secret, secretInfo.mode)
+      channel.send(chMsg)[
+        if (cmd == FMessage.CHALLENGE) {
+          val rplCh = it as RplChallenge
+          val sigName = chain.card.header.get("sign")
+          val sigHelper = new SignatureHelper(sigName)
+          
+          val isValid = sigHelper.verifySignature(chain.card.pubKey, nonce, rplCh.body.sigc)
+          if (isValid)
+            logBox.value = logBox.value + "\n" + "---Login OK---"
+        } else {
+          if (cmd == FMessage.ACK)
+            logBox.value = logBox.value + "\nACK: " + (it as Ack).body.error
+             
+          logBox.value = logBox.value + "\n" + "---Login FAILED---"
+        }
+      ]
+    }
+  }
+  
+  private def void tryEvolve(String uuid, String start) {
     val elvMsg = new ReqEvolve(card.block.uuid, uuid, start)
     channel.send(elvMsg)[
       if (cmd == FMessage.EVOLVE) {
