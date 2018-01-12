@@ -15,14 +15,22 @@ class CardInfo {
 
 class CardHelper {
   static def CardInfo create(Map<String, String> cardInfo) {
-    return create(cardInfo, #[])
+    return create(null, cardInfo, #[])
   }
   
   static def CardInfo create(Map<String, String> cardInfo, List<TrustedLink> cardlLinks) {
+    return create(null, cardInfo, cardlLinks)
+  }
+  
+  static def CardInfo create(String uuid, Map<String, String> cardInfo) {
+    return create(uuid, cardInfo, #[])
+  }
+  
+  static def CardInfo create(String uuid, Map<String, String> cardInfo, List<TrustedLink> cardlLinks) {
     val keyPair = new KeyPairHelper().genKeyPair
     val pk = keyPair.private
     
-    val newCard = new CardBlock(keyPair.public) => [
+    val newCard = new CardBlock(keyPair.public, uuid) => [
       info.putAll(cardInfo)
       links.addAll(cardlLinks)
       sign(pk)

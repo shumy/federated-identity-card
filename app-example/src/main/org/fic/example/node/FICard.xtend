@@ -1,5 +1,6 @@
 package org.fic.example.node
 
+import java.util.List
 import javafx.beans.property.StringProperty
 import javafx.geometry.Insets
 import javafx.scene.control.Button
@@ -7,7 +8,6 @@ import javafx.scene.control.TextArea
 import javafx.scene.control.TextField
 import javafx.scene.layout.BorderPane
 import javafx.scene.layout.HBox
-import org.eclipse.xtend.lib.annotations.Accessors
 import org.fic.api.TrustedLink
 import org.fic.broker.IBroker
 import org.fic.broker.msg.Ack
@@ -23,16 +23,18 @@ import org.fic.crypto.SecretInfo
 import org.fic.crypto.SignatureHelper
 
 class FICard extends IFicNode {
-  @Accessors(PUBLIC_GETTER) var CardInfo card
+  var String uuid
+  var CardInfo card
   
-  val String tl_1
-  val String tl_2
+  val List<TrustedLink> cardlLinks
   
   new(IBroker broker, String tl_1, String tl_2) {
     super(broker)
     
-    this.tl_1 = tl_1
-    this.tl_2 = tl_2
+    cardlLinks = #[
+      new TrustedLink("tl-1-url", tl_1),
+      new TrustedLink("tl-2-url", tl_2)
+    ]
     
     //process requests
     channel.onReceive[
@@ -55,7 +57,7 @@ class FICard extends IFicNode {
     val sigHelper = new SignatureHelper(sigName)
     val sigc = sigHelper.sign(card.prvKey, nonce)
     
-    val rplMsg = new RplChallenge(card.block.uuid, msg.from, sigc)
+    val rplMsg = new RplChallenge(uuid, msg.from, sigc)
     rplMsg.id = msg.id //in the same conversation
     channel.send(rplMsg)
   }
@@ -84,6 +86,11 @@ class FICard extends IFicNode {
         ])
         
         add(txtLogin)
+        
+        add(new Button => [
+          text = "Send Candidate"
+          setOnAction[ sendCandidate(txtLogin.text, txtLog.textProperty) ]
+        ])
       ]
     ]
     
@@ -94,26 +101,62 @@ class FICard extends IFicNode {
   }
   
   private def void registerAndSubscribe(String name, StringProperty logBox) {
-    val cardInfo = #{ "name" -> name }
-    val cardlLinks = #[
-      new TrustedLink("tl-1-url", tl_1),
-      new TrustedLink("tl-2-url", tl_2)
-    ]
+    if (name == "") {
+      logBox.value = "Set a value for the login name."
+      return
+    }
     
     logBox.value = "---Register/Subscribe START---"
+    val cardInfo = #{ "name" -> name }
     
     //create card
     card = CardHelper.create(cardInfo, cardlLinks)
-    println('''CREATED-CARD: (uuid=«card.block.uuid», info=«card.block.info»)''')
+    uuid = card.block.uuid
+    println('''CREATED-CARD: (uuid=«uuid», key=«card.block.key», info=«card.block.info»)''')
     
     //register card
-    channel.send(new ReqRegister(card.block.uuid, ReqRegister.NEW, card.block.retrieve))[
+    channel.send(new ReqRegister(uuid, ReqRegister.NEW, card.block.retrieve))[
       if (cmd == FMessage.ACK && (it as Ack).body.code === 0)
-        logBox.value = logBox.value + "\n" + '''Registered: (uuid=«card.block.uuid», name=«name»)'''
+        logBox.value = logBox.value + "\n" + '''Registered: (uuid=«uuid», name=«name»)'''
+      else {
+        logBox.value = logBox.value + "\nACK: " + (it as Ack).body.error
+        logBox.value = logBox.value + "\n" + "---Register/Subscribe FAIL---"
+      }
     ]
     
     //subscribe
-    channel.send(new ReqSubscribe(card.block.uuid))
+    channel.send(new ReqSubscribe(uuid))
     logBox.value = logBox.value + "\n" + "---Register/Subscribe OK---"
+  }
+  
+  private def void sendCandidate(String name, StringProperty logBox) {
+    if (name == "") {
+      logBox.value = "Set a value for the login name."
+      return
+    }
+    
+    if (card === null) {
+      logBox.value = "You need to Register/Subscribe first."
+      return
+    }
+    
+    logBox.value = "---Candidate START---"
+    val cardInfo = #{ "name" -> name }
+    
+    //create card
+    val candidate = CardHelper.create(uuid, cardInfo, cardlLinks)
+    println('''CREATED-CARD: (uuid=«uuid», key=«candidate.block.key», info=«candidate.block.info»)''')
+    
+    //register card
+    channel.send(new ReqRegister(uuid, ReqRegister.CANDIDATE, card.block.retrieve))[
+      if (cmd == FMessage.ACK && (it as Ack).body.code === 0) {
+        card = candidate
+        logBox.value = logBox.value + "\n" + '''Candidate: (uuid=«uuid», key=«card.block.key»)'''
+        logBox.value = logBox.value + "\n" + "---Candidate OK---"
+      } else {
+        logBox.value = logBox.value + "\nACK: " + (it as Ack).body.error
+        logBox.value = logBox.value + "\n" + "---Candidate FAIL---"
+      }
+    ]
   }
 }

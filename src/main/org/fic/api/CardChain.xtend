@@ -170,6 +170,7 @@ class CardChain {
   
   private def isValidLink(String trustedKey, String crLinkKey) {
     //TODO: validation can be more complex than a simple equality, depends if the trusted chain can also evolve
+    println('''«trustedKey» == «crLinkKey»''')
     trustedKey == crLinkKey
   }
 }

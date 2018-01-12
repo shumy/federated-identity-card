@@ -190,6 +190,11 @@ class FITrustedLink extends IFicNode {
   }
   
   private def void cancelCard(String name, StringProperty logBox) {
+    if (name == "") {
+      logBox.value = "Set a value for the login name."
+      return
+    }
+    
     logBox.value = "---Cancel START---"
     // search login card...
     search(name, logBox)
@@ -205,11 +210,20 @@ class FITrustedLink extends IFicNode {
       channel.send(crMsg)[
         if (cmd == FMessage.ACK && (it as Ack).body.code === 0)
           logBox.value = logBox.value + "\n" + "---Cancel OK---"
+        else {
+          logBox.value = logBox.value + "\nACK: " + (it as Ack).body.error
+          logBox.value = logBox.value + "\n" + "---Cancel FAIL---"
+        }
       ]
     }
   }
   
   private def void recoverCard(String name, StringProperty logBox) {
+    if (name == "") {
+      logBox.value = "Set a value for the login name."
+      return
+    }
+    
     logBox.value = "---Recover START---"
     // search login card...
     search(name, logBox)
@@ -223,6 +237,10 @@ class FITrustedLink extends IFicNode {
       channel.send(crMsg)[
         if (cmd == FMessage.ACK && (it as Ack).body.code === 0)
           logBox.value = logBox.value + "\n" + "---Recover OK---"
+        else {
+          logBox.value = logBox.value + "\nACK: " + (it as Ack).body.error
+          logBox.value = logBox.value + "\n" + "---Recover FAIL---"
+        }
       ]*/
     }
   }

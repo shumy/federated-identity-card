@@ -146,6 +146,11 @@ class FIApplication extends IFicNode {
   }
   
   private def void tryLogin(String name, StringProperty logBox) {
+    if (name == "") {
+      logBox.value = "Set a value for the login name."
+      return
+    }
+    
     logBox.value = "---Login START---"
     logBox.value = logBox.value + "\n" + "Try login with: " + name
     

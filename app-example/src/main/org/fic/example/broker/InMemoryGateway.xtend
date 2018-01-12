@@ -245,7 +245,7 @@ class InMemoryGateway {
     if (crLink.type === CRLink.CANCEL)
       println('''  GT-CANCEL-LNK: (uuid=«crLink.uuid», prev=«crLink.prev»)''')
     else
-      println('''  GT-CANCEL-LNK: (uuid=«crLink.uuid», prev=«crLink.prev», next=«crLink.next»)''')
+      println('''  GT-RECOVER-LNK: (uuid=«crLink.uuid», prev=«crLink.prev», next=«crLink.next»)''')
     
     chain.addLink(crLink)
     println('''  GT-CHAIN-STATUS: (uuid=«chain.uuid», current=«chain.card.uuid», active=«chain.active»)''')
