@@ -11,9 +11,9 @@ class ReqRegister extends FMessage {
   public static val CANDIDATE = "cand"
   
   protected new() { /* used for JSON load only */ }
-  new(String from, String reqType, ByteBuffer cardBlock) {
+  new(String from, String reqType, ByteBuffer card) {
     super(REQUEST, REGISTER, from, null)
-    this.body = new Body(reqType, cardBlock)
+    this.body = new Body(reqType, card)
   }
   
   @Accessors(PUBLIC_GETTER) var Body body

@@ -6,8 +6,8 @@ import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
 import org.eclipse.xtend.lib.annotations.FinalFieldsConstructor
 import org.fic.broker.IChannel
+import org.fic.broker.msg.Ack
 import org.fic.broker.msg.FMessage
-import org.fic.broker.msg.reply.RplAck
 
 @FinalFieldsConstructor
 class InMemoryChannel implements IChannel {
@@ -22,7 +22,7 @@ class InMemoryChannel implements IChannel {
   package def void received(FMessage msg) {
     if (msg.type == FMessage.REQUEST && onMessage !== null) {
       onMessage.apply(msg)
-    } else if (msg.type == FMessage.REPLY) {
+    } else if (msg.type == FMessage.REPLY || msg.cmd == FMessage.ACK) {
       val rpl = replyListeners.remove(msg.id)
       rpl?.apply(msg)
     }
@@ -33,7 +33,8 @@ class InMemoryChannel implements IChannel {
   }
   
   override send(FMessage msg, (FMessage)=>void onReply) {
-    msg.id = broker.next.andIncrement
+    if (msg.id === null)
+      msg.id = broker.next.andIncrement
     
     if (onReply !== null) {
       replyListeners.put(msg.id, onReply)
@@ -41,7 +42,7 @@ class InMemoryChannel implements IChannel {
       //timeout handler...
       executor.schedule([
         val rpl = replyListeners.remove(msg.id)
-        rpl?.apply(new RplAck(msg.to, msg.from, RplAck.TIMEOUT))
+        rpl?.apply(new Ack(msg.to, msg.from, Ack.TIMEOUT))
         
         return null
       ], 5, TimeUnit.SECONDS)

@@ -5,6 +5,7 @@ import javafx.scene.shape.Rectangle
 import org.eclipse.xtend.lib.annotations.Accessors
 import org.fic.broker.IBroker
 import org.fic.broker.msg.request.ReqRegister
+import org.fic.broker.msg.request.ReqSubscribe
 import org.fic.crypto.CardHelper
 import org.fic.crypto.CardInfo
 
@@ -21,8 +22,10 @@ class FITrustedLink extends IFicNode {
     println('''CREATED-CARD: (uuid=«card.block.uuid», info=«card.block.info»)''')
     
     //register card
-    val msg = new ReqRegister(card.block.uuid, ReqRegister.NEW, card.block.retrieve)
-    channel.send(msg)
+    channel.send(new ReqRegister(card.block.uuid, ReqRegister.NEW, card.block.retrieve))
+    
+    //subscribe
+    channel.send(new ReqSubscribe(card.block.uuid))
   }
   
   override content() {

@@ -3,20 +3,26 @@ package org.fic.example.broker
 import com.fasterxml.jackson.databind.JsonNode
 import com.fasterxml.jackson.databind.ObjectMapper
 import java.util.HashMap
+import java.util.Map
 import java.util.UUID
+import java.util.concurrent.ConcurrentHashMap
 import org.fic.api.CardBlock
 import org.fic.api.CardChain
+import org.fic.broker.msg.Ack
 import org.fic.broker.msg.FMessage
-import org.fic.broker.msg.reply.RplAck
+import org.fic.broker.msg.reply.ChainStruct
 import org.fic.broker.msg.reply.RplChallenge
+import org.fic.broker.msg.reply.RplEvolve
+import org.fic.broker.msg.reply.RplSearch
 import org.fic.broker.msg.request.ReqChallenge
+import org.fic.broker.msg.request.ReqEvolve
 import org.fic.broker.msg.request.ReqRegister
+import org.fic.broker.msg.request.ReqSearch
 import org.fic.broker.msg.request.ReqSubscribe
 import org.fic.crypto.CardHelper
 import org.fic.crypto.CardInfo
 import org.fic.crypto.CipherHelper
 import org.fic.crypto.SignatureHelper
-import java.util.concurrent.ConcurrentHashMap
 
 class InMemoryGateway {
   val mapper = new ObjectMapper
@@ -27,8 +33,9 @@ class InMemoryGateway {
   val invRoutes = new HashMap<String, String>                   // chUUID -> public-key
   val routes = new HashMap<String, String>                      // public-key -> chUUID
   
-  //cards and chains
+  //cards / chains / logins
   val CardInfo card
+  val logins = new HashMap<String, String>                      // name - uuid
   val chains = new HashMap<String, CardChain>                   // uuid - CardChain
   
   val pendingChallenges = new ConcurrentHashMap<String, String> // from - nonce
@@ -97,6 +104,8 @@ class InMemoryGateway {
       switch(mCmd) {
         case FMessage.REGISTER: register(chUUID, fMsg as ReqRegister)
         case FMessage.SUBSCRIBE: subscribe(chUUID, fMsg as ReqSubscribe)
+        case FMessage.SEARCH: search(chUUID, fMsg as ReqSearch)
+        case FMessage.EVOLVE: evolve(chUUID, fMsg as ReqEvolve)
       }
     
     if (mType == FMessage.REPLY)
@@ -107,27 +116,28 @@ class InMemoryGateway {
   
   private def void register(String chUUID, ReqRegister msg) {
     val loadedCard = CardBlock.load(msg.body.card)
-    println('''  GT-REGISTER: (type=«msg.body.type», card=«loadedCard.uuid»)''')
+    println('''  GT-REGISTER: (type=«msg.body.type», card=«loadedCard.uuid», info=«loadedCard.info»)''')
     
     val chain = chains.get(loadedCard.uuid)
     if (msg.body.type == ReqRegister.NEW) {
       if (chain !== null) {
         // card-chain already exists!
-        reply(chUUID, msg.id, new RplAck(card.block.key, msg.from, RplAck.REG_EXISTENT_CARD))
+        reply(chUUID, msg.id, new Ack(card.block.key, msg.from, Ack.REG_EXISTENT_CARD))
         return
       }
       
+      logins.put(loadedCard.info.get("name"), loadedCard.uuid)
       chains.put(loadedCard.uuid, new CardChain(loadedCard))
     } else {
       if (chain === null) {
         // non existent card-chain
-        reply(chUUID, msg.id, new RplAck(card.block.key, msg.from, RplAck.NO_CHAIN))
+        reply(chUUID, msg.id, new Ack(card.block.key, msg.from, Ack.NO_CHAIN))
         return
       }
       
       if (chain.active) {
         // candidate not accepted, card-chain is still active!
-        reply(chUUID, msg.id, new RplAck(card.block.key, msg.from, RplAck.CHAIN_ACTIVE))
+        reply(chUUID, msg.id, new Ack(card.block.key, msg.from, Ack.CHAIN_ACTIVE))
         return
       }
       
@@ -135,7 +145,7 @@ class InMemoryGateway {
     }
     
     // card-block registered with success
-    reply(chUUID, msg.id, new RplAck(card.block.key, msg.from, RplAck.OK))
+    reply(chUUID, msg.id, new Ack(card.block.key, msg.from, Ack.OK))
   }
   
   private def void subscribe(String chUUID, ReqSubscribe msg) {
@@ -144,13 +154,13 @@ class InMemoryGateway {
     val chain = chains.get(msg.from)
     if (chain === null) {
       // non existent card-chain
-      reply(chUUID, msg.id, new RplAck(card.block.key, msg.from, RplAck.NO_CHAIN))
+      reply(chUUID, msg.id, new Ack(card.block.key, msg.from, Ack.NO_CHAIN))
       return
     }
     
     if (!chain.active) {
       // subscription not accepted, card-chain is not active! Needs to recover.
-      reply(chUUID, msg.id, new RplAck(card.block.key, msg.from, RplAck.CHAIN_INACTIVE))
+      reply(chUUID, msg.id, new Ack(card.block.key, msg.from, Ack.CHAIN_INACTIVE))
       return
     }
     
@@ -166,10 +176,53 @@ class InMemoryGateway {
     reply(chUUID, msg.id, new ReqChallenge(card.block.key, msg.from, secretInfo.secret, secretInfo.mode))
   }
   
+  private def void search(String chUUID, ReqSearch msg) {
+    //this is not a full query implementation...
+    println('''  GT-SEARCH: (query=«msg.body.query»)''')
+    val uuid = logins.get(msg.body.query)
+    val result = if(uuid === null) #[] else {
+      val chain = chains.get(uuid)
+      val line = new HashMap<String, String> => [
+        put("uuid", chain.uuid)
+        put("active", "" + chain.active)
+        put("last", chain.card.key)
+        putAll(chain.card.info)
+      ]
+      
+      #[ line as Map<String, String> ]
+    }
+    
+    reply(chUUID, msg.id, new RplSearch(card.block.key, msg.from, result))
+  }
+  
+  private def void evolve(String chUUID, ReqEvolve msg) {
+    println('''  GT-EVOLVE: (uuid=«msg.body.uuid», start=«msg.body.start»)''')
+    val chain = chains.get(msg.body.uuid)
+    if (chain === null) {
+      reply(chUUID, msg.id, new Ack(card.block.key, msg.from, Ack.NO_CHAIN))
+      return
+    }
+    
+    //simplified version returns all cards from the chain, not just from start...
+    val chainStruct = chain.chain.map[ cl |
+      val sLinks = cl.links.map[ retrieve ]
+      new ChainStruct(cl.card.retrieve, sLinks)
+    ]
+    
+    val nonce = chainStruct
+      .fold("")[ r, next | r + "-" + next.toString ]
+    
+    val sigName = card.block.header.get("sign")
+    val sigHelper = new SignatureHelper(sigName)
+    val sign = sigHelper.sign(card.prvKey, nonce)
+    
+    reply(chUUID, msg.id, new RplEvolve(card.block.key, msg.from, chainStruct, sign, #{ "suite" -> sigName, "curve" -> "secp384r1" }))
+  }
+  
   private def void challengeReply(String chUUID, RplChallenge msg) {
     val chain = chains.get(msg.from)
     if (chain === null) {
-      reply(chUUID, msg.id, new RplAck(card.block.key, msg.from, RplAck.NO_CHAIN))
+      reply(chUUID, msg.id, new Ack(card.block.key, msg.from, Ack.NO_CHAIN))
       return
     }
     
@@ -179,12 +232,12 @@ class InMemoryGateway {
     
     val isValid = sigHelper.verifySignature(chain.card.pubKey, nonce, msg.body.sigc)
     if (!isValid) {
-      reply(chUUID, msg.id, new RplAck(card.block.key, msg.from, RplAck.SIGNATURE))
+      reply(chUUID, msg.id, new Ack(card.block.key, msg.from, Ack.SIGNATURE))
       return
     }
     
     //TODO: if route already exists !?
-    println('''  GT-CHALLENGE-ACCEPTED: (nonce=«nonce»''')
+    println('''  GT-CHALLENGE-ACCEPTED: (nonce=«nonce»)''')
     routes.put(msg.from, chUUID)
     invRoutes.put(chUUID, msg.from)
   }

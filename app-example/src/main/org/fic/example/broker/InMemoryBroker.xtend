@@ -53,7 +53,7 @@ class InMemoryBroker implements IBroker {
     println('''RECEIVED: «json»''')
     
     val tree = mapper.readTree(json)
-    val mType = tree.get("type").asText
+    val mType = tree.get("type")?.asText
     val mCmd = tree.get("cmd").asText
     val mClass = FMessage.select(mType, mCmd)
     

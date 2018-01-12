@@ -16,6 +16,7 @@ import org.fic.crypto.CipherHelper
 import org.fic.crypto.SecretInfo
 import org.fic.crypto.SignatureHelper
 
+
 class FICard extends IFicNode {
   @Accessors(PUBLIC_GETTER) var CardInfo card
   
@@ -28,9 +29,6 @@ class FICard extends IFicNode {
       new TrustedLink("tl-2-url", tl_2)
     ]
     
-    card = CardHelper.create(cardInfo, cardlLinks)
-    println('''CREATED-CARD: (uuid=«card.block.uuid», info=«card.block.info»)''')
-    
     //process requests
     channel.onReceive[
       if (type == FMessage.REQUEST)
@@ -38,6 +36,10 @@ class FICard extends IFicNode {
           case FMessage.CHALLENGE: challenge(it as ReqChallenge)
         }
     ]
+    
+    //create card
+    card = CardHelper.create(cardInfo, cardlLinks)
+    println('''CREATED-CARD: (uuid=«card.block.uuid», info=«card.block.info»)''')
     
     //register card
     channel.send(new ReqRegister(card.block.uuid, ReqRegister.NEW, card.block.retrieve))
@@ -57,7 +59,10 @@ class FICard extends IFicNode {
     val sigName = card.block.header.get("sign")
     val sigHelper = new SignatureHelper(sigName)
     val sigc = sigHelper.sign(card.prvKey, nonce)
-    channel.send(new RplChallenge(card.block.uuid, msg.from, sigc))
+    
+    val rplMsg = new RplChallenge(card.block.uuid, msg.from, sigc)
+    rplMsg.id = msg.id //in the same conversation
+    channel.send(rplMsg)
   }
   
   override content() {

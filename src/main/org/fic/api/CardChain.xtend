@@ -1,22 +1,26 @@
 package org.fic.api
 
+import java.util.Collections
 import java.util.HashMap
 import java.util.LinkedList
+import org.eclipse.xtend.lib.annotations.Accessors
 import org.eclipse.xtend.lib.annotations.FinalFieldsConstructor
+import java.util.List
 
 @FinalFieldsConstructor
 class ChainLink {
-  package var boolean active = false
+  @Accessors(PUBLIC_GETTER) package var boolean active = false
+  @Accessors package val CardBlock card
   
-  package val CardBlock card
-  package val crLinks = new LinkedList<CRLink>
+  package val List<CRLink> crLinks// = new LinkedList<CRLink>
+  def getLinks() { Collections.unmodifiableList(crLinks) }
 }
 
 @FinalFieldsConstructor
 class CardChain {
-  val String uuid
+  @Accessors val String uuid
+  @Accessors val List<ChainLink> chain
   
-  val chain = new LinkedList<ChainLink>
   val candidates = new HashMap<String, CardBlock> //recover candidates
   
   var ChainLink current = null
@@ -24,7 +28,7 @@ class CardChain {
   def isActive() { current.active }
   def getCard() { current.card }
   
-  // create a card chain with the registration card
+  // create a card-chain with the registration card
   new(CardBlock regCard) {
     if (!regCard.signed)
       throw new FicError(CardChain, "The card chain only accepts signed cards!", 1)
@@ -32,12 +36,31 @@ class CardChain {
     if (regCard.uuid != regCard.key)
       throw new FicError(CardChain, "The registration card must have the uuid == key!", 2)
     
-    val head = new ChainLink(regCard)
+    val head = new ChainLink(regCard, new LinkedList<CRLink>)
     
     uuid = regCard.key
+    chain = new LinkedList<ChainLink>
     chain.add(head)
     
     current = head
+    current.active = true
+  }
+  
+  // create a card-chain with the chain-links
+  new(List<ChainLink> chainLinks) {
+    if (chainLinks.length === 0)
+      throw new FicError(CardChain, "The chain-links is empty!", -1)
+    
+    val head = chainLinks.head
+    val regCard = head.card
+    
+    if (regCard.uuid != regCard.key)
+      throw new FicError(CardChain, "The registration card must have the uuid == key!", 2)
+    
+    uuid = regCard.key
+    chain = chainLinks
+    
+    current = chainLinks.last
     current.active = true
   }
   
@@ -93,7 +116,10 @@ class CardChain {
     tryEvolve
   }
   
-  //TODO: merge with other valid chain
+  //merge with chain from another source, this must be already validated with a source signature
+  def void merge(List<ChainLink> links) {
+    
+  }
   
   //verify the chain to calculate the current ChainLink and is state!
   private def void tryEvolve() {
@@ -133,7 +159,7 @@ class CardChain {
     for (candidate : candidateCounters.entrySet)
       if (candidateCounters.get(candidate) === current.card.links.length) {
         //all good, evolve by recovering
-        val nextLink = new ChainLink(candidates.get(candidate))
+        val nextLink = new ChainLink(candidates.get(candidate), new LinkedList<CRLink>)
         chain.add(nextLink)
         
         current = nextLink

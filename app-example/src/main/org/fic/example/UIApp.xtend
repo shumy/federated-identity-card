@@ -2,11 +2,9 @@ package org.fic.example
 
 import javafx.application.Application
 import javafx.scene.Scene
-import javafx.scene.control.Button
 import javafx.scene.control.Tab
 import javafx.scene.control.TabPane
 import javafx.scene.layout.FlowPane
-import javafx.scene.layout.StackPane
 import javafx.stage.Stage
 import org.fic.example.broker.InMemoryBroker
 import org.fic.example.broker.InMemoryGateway
@@ -68,19 +66,12 @@ class UIApp extends Application {
           content = fitl_2.content
         ])
       ])
-      
-      children.add(new StackPane => [
-        children.add(new Button => [
-          text = "Say 'Hello World'"
-          setOnAction[ println("Hello World") ]
-        ])
-      ])
     ]
     
     //setup stage...
     stage => [
       title = "FICP proof of concept application."
-      scene = new Scene(root, 800, 600)
+      scene = new Scene(root, 1200, 700)
       show
     ]
   }

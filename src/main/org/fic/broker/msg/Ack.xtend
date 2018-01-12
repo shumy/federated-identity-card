@@ -1,11 +1,11 @@
-package org.fic.broker.msg.reply
+package org.fic.broker.msg
 
 import com.fasterxml.jackson.annotation.JsonInclude
 import com.fasterxml.jackson.annotation.JsonInclude.Include
 import org.eclipse.xtend.lib.annotations.Accessors
 import org.fic.broker.msg.FMessage
 
-class RplAck extends FMessage {
+class Ack extends FMessage {
   //reply with success:
   public static val OK = 0                                  //OK ack
   
@@ -34,7 +34,7 @@ class RplAck extends FMessage {
   protected new() { /* used for JSON load only */ }
   new(String from, String to, Integer code) { this(from, to, code, null) }
   new(String from, String to, Integer code, String completeError) {
-    super(REPLY, ACK, from, to)
+    super(null, ACK, from, to)
     
     val error = switch(code) {
       case OK: null

@@ -4,7 +4,6 @@ import com.fasterxml.jackson.annotation.JsonInclude
 import com.fasterxml.jackson.annotation.JsonInclude.Include
 import java.util.HashMap
 import org.eclipse.xtend.lib.annotations.Accessors
-import org.fic.broker.msg.reply.RplAck
 import org.fic.broker.msg.reply.RplChallenge
 import org.fic.broker.msg.reply.RplEvolve
 import org.fic.broker.msg.reply.RplSearch
@@ -15,6 +14,7 @@ import org.fic.broker.msg.request.ReqEvolve
 import org.fic.broker.msg.request.ReqRegister
 import org.fic.broker.msg.request.ReqSearch
 import org.fic.broker.msg.request.ReqSubscribe
+import org.fic.broker.msg.Ack
 
 @JsonInclude(Include.NON_NULL)
 abstract class FMessage {
@@ -57,6 +57,8 @@ abstract class FMessage {
   protected val body = new HashMap<String, Object>
   
   public static def Class<? extends FMessage> select(String type, String cmd) {
+    if(cmd == ACK) return Ack
+      
     if (type == REQUEST) {
       switch (cmd) {
         case CHALLENGE: return ReqChallenge
@@ -69,7 +71,6 @@ abstract class FMessage {
       }
     } else if (type == FMessage.REPLY) {
       switch (cmd) {
-        case ACK: return RplAck
         case CHALLENGE: return RplChallenge
         case SEARCH: return RplSearch
         case EVOLVE: return RplEvolve
