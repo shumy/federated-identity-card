@@ -59,11 +59,11 @@ class UIApp extends Application {
           content = fitl_2.content
         ])
         
-        tabs.add(new Tab => [
+        /*tabs.add(new Tab => [
           text = "FI-Gateway"
           closable = false
           content = fiGateway.content
-        ])
+        ])*/
       ])
     ]
     

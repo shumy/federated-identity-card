@@ -31,6 +31,9 @@ class Ack extends FMessage {
   //Search errors:
   public static val SCH_INVALID_QUERY = 401                 //invalid query
   
+  //Evolve errors:
+  public static val EVL_INVALID_START = 501                 //when there is no CardBlock at the start position
+  
   protected new() { /* used for JSON load only */ }
   new(String from, String to, Integer code) { this(from, to, code, null) }
   new(String from, String to, Integer code, String completeError) {
@@ -54,6 +57,8 @@ class Ack extends FMessage {
       case CR_NOT_FOUND: "No card-block or t-link found."
       
       case SCH_INVALID_QUERY: "Invalid query format: " + completeError
+      
+      case EVL_INVALID_START: "Starting at an undefined card-block." 
     }
     
     this.body = new Body(code, error)
