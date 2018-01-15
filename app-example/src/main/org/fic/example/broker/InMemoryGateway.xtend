@@ -254,6 +254,11 @@ class InMemoryGateway {
       return
     }
     
+    if (crLink.prev != chain.card.key) {
+      reply(chUUID, msg.id, new Ack(card.block.key, msg.from, Ack.CR_NOT_FOUND))
+      return
+    }
+    
     if (crLink.type === CRLink.CANCEL)
       println('''  GT-CANCEL-LNK: (uuid=«crLink.uuid», prev=«crLink.prev»)''')
     else

@@ -98,6 +98,11 @@ class FITrustedLink extends IFicNode {
           setOnAction[ recoverCard(txtLogin.text, txtUuid.text, txtLog.textProperty) ]
         ])
         
+        add(new Button => [
+          text = "Evolve"
+          setOnAction[ evolve(txtLogin.text, txtLog.textProperty) ]
+        ])
+        
         add(txtLogin)
         add(txtUuid)
       ]
@@ -157,6 +162,27 @@ class FITrustedLink extends IFicNode {
       ]
     }
   }
+  
+  private def void evolve(String name, StringProperty logBox) {
+    if (name == "") {
+      logBox.value = "Set a value for the login name."
+      return
+    }
+    
+    logBox.value = "---Evolve START---"
+    
+    // search login card...
+    search(name, logBox)
+    val uuid = logins.get(name)
+    if (uuid !== null) {
+      val chain = chains.get(uuid)
+      
+      logBox.value = logBox.value + "\n" + '''Evolve from: (name=«name», uuid=«uuid», start=«chain.card.key»)'''
+      tryEvolve(uuid, chain.card.key)
+      logBox.value = logBox.value + "\n" + "---Evolve COMPLETED---"
+    }
+  }
+  
   
   private def void tryEvolve(String uuid, String start) {
     val elvMsg = new ReqEvolve(card.block.uuid, uuid, start)
