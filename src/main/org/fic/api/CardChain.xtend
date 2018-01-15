@@ -60,7 +60,7 @@ class CardChain {
     uuid = regCard.key
     chain = chainLinks
     
-    current = chainLinks.last
+    current = chain.last
     current.active = true
   }
   
@@ -119,8 +119,27 @@ class CardChain {
   }
   
   //merge with chain from another source, this must be already validated with a source signature
-  def void merge(List<ChainLink> links) {
+  def void merge(List<ChainLink> chainLinks) {
+    if (chainLinks.length === 0)
+      throw new FicError(CardChain, "The chain-links is empty!", -1)
     
+    val head = chainLinks.head
+    
+    var i = 0
+    var index = -1
+    for (link: chain) {
+      i++
+      if (link.card.key == head.card.key)
+        index = i
+    }
+    
+    if (index !== -1){
+      chain.subList(index, chain.size).clear
+      chain.addAll(chainLinks)
+      
+      current = chain.last
+      current.active = true
+    }
   }
   
   //verify the chain to calculate the current ChainLink and is state!
@@ -147,17 +166,15 @@ class CardChain {
     
     //recover if all trusted links have recover responses
     val candidateCounters = new HashMap<String, Integer>
-    for (tl : current.card.links)
-      for (crLink : current.crLinks)
-        if (crLink.type.bitwiseAnd(CRLink.RECOVER) === CRLink.RECOVER) {
-          var counter = candidateCounters.get(crLink.next) ?: 0
-          counter++
-          
-          candidateCounters.put(crLink.next, counter)
-        }
+    for (crLink : current.crLinks)
+      if (crLink.type === CRLink.RECOVER) {
+        var counter = candidateCounters.get(crLink.next) ?: 0
+        counter++
+        candidateCounters.put(crLink.next, counter)
+      }
     
     // accept the firts candidate
-    for (candidate : candidateCounters.entrySet)
+    for (candidate : candidateCounters.keySet)
       if (candidateCounters.get(candidate) === current.card.links.length) {
         //all good, evolve by recovering
         val nextLink = new ChainLink(candidates.get(candidate), new LinkedList<CRLink>)
@@ -168,6 +185,7 @@ class CardChain {
         
         //no need for these candidates anymore
         candidates.clear
+        return
       }
   }
   

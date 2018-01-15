@@ -86,6 +86,11 @@ class FIApplication extends IFicNode {
           setOnAction[ tryLogin(txtLogin.text, txtLog.textProperty) ]
         ])
         
+        add(new Button => [
+          text = "Evolve"
+          setOnAction[ evolve(txtLogin.text, txtLog.textProperty) ]
+        ])
+        
         add(txtLogin)
       ]
     ] 
@@ -167,7 +172,7 @@ class FIApplication extends IFicNode {
       
       //request challenge...
       logBox.value = logBox.value + "\n" + '''Challenging: (uuid=«uuid», nonce=«nonce»)'''
-      val chMsg = new ReqChallenge(card.block.uuid, uuid, secretInfo.secret, secretInfo.mode)
+      val chMsg = new ReqChallenge(card.block.uuid, uuid, secretInfo.secret, chain.card.key, secretInfo.mode)
       channel.send(chMsg)[
         if (cmd == FMessage.CHALLENGE) {
           val rplCh = it as RplChallenge
@@ -184,6 +189,26 @@ class FIApplication extends IFicNode {
           logBox.value = logBox.value + "\n" + "---Login FAILED---"
         }
       ]
+    }
+  }
+  
+  private def void evolve(String name, StringProperty logBox) {
+    if (name == "") {
+      logBox.value = "Set a value for the login name."
+      return
+    }
+    
+    logBox.value = "---Evolve START---"
+    
+    // search login card...
+    search(name, logBox)
+    val uuid = logins.get(name)
+    if (uuid !== null) {
+      val chain = chains.get(uuid)
+      
+      logBox.value = logBox.value + "\n" + '''Evolve from: (name=«name», uuid=«uuid», start=«chain.card.key»)'''
+      tryEvolve(uuid, chain.card.key)
+      logBox.value = logBox.value + "\n" + "---Evolve COMPLETED---"
     }
   }
   

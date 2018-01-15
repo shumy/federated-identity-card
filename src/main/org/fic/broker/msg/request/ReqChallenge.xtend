@@ -8,9 +8,9 @@ import org.fic.broker.msg.FMessage
 
 class ReqChallenge extends FMessage {
   protected new() { /* used for JSON load only */ }
-  new(String from, String to, String secret, Map<String, String> mode) {
+  new(String from, String to, String secret, String key, Map<String, String> mode) {
     super(REQUEST, CHALLENGE, from, to)
-    this.body = new Body(secret, mode) 
+    this.body = new Body(secret, key, mode) 
   }
   
   @Accessors(PUBLIC_GETTER) var Body body
@@ -18,12 +18,14 @@ class ReqChallenge extends FMessage {
   @JsonInclude(Include.NON_NULL)
   static class Body {
     protected new() { /* used for JSON load only */ }
-    new(String secret, Map<String, String> mode) {
+    new(String secret, String key, Map<String, String> mode) {
       this.secret = secret
+      this.key = key
       this.mode = mode
     }
     
     @Accessors(PUBLIC_GETTER) var String secret
+    @Accessors(PUBLIC_GETTER) var String key
     @Accessors(PUBLIC_GETTER) var Map<String, String> mode
   }
 }

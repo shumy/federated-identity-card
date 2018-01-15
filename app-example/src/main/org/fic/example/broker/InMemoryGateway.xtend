@@ -88,16 +88,28 @@ class InMemoryGateway {
     
     val chUUID = routes.get(to)
     if (chUUID !== null) {
+      val id = tree.get("id").asLong
+      val type = tree.get("type").asText
+      val cmd = tree.get("cmd").asText
+      val from = tree.get("from").asText
       
-      // if the chain is inactive, reply with CHA_NO_SYNC
+      // if the chain is inactive, reply with CHAIN_INACTIVE
       val chain = chains.get(to)
       if (!chain.active) {
-        val id = tree.get("id").asLong
-        val from = tree.get("from").asText
-        
         println('''    Route inactive: «to»''')
-        reply(rplChUUID, id, new Ack(card.block.key, from, Ack.CHA_NO_SYNC))
+        reply(rplChUUID, id, new Ack(card.block.key, from, Ack.CHAIN_INACTIVE))
         return
+      }
+      
+      if (type == FMessage.REQUEST && cmd == FMessage.CHALLENGE) {
+        val fMsg = mapper.treeToValue(tree, ReqChallenge)
+        
+        println('''  GT-ROUTE-VERIFY: (to=«to», chain.key=«chain.card.key», msg.key=«fMsg.body.key»)''')
+        if (chain.card.key != fMsg.body.key) {
+          println('''    Challenge wrong key!''')
+          reply(rplChUUID, id, new Ack(card.block.key, from, Ack.CHA_NO_SYNC))
+          return
+        }
       }
       
       val ch = channels.get(chUUID)
@@ -131,7 +143,7 @@ class InMemoryGateway {
   
   private def void register(String chUUID, ReqRegister msg) {
     val loadedCard = CardBlock.load(msg.body.card)
-    println('''  GT-REGISTER: (type=«msg.body.type», card=«loadedCard.uuid», info=«loadedCard.info»)''')
+    println('''  GT-REGISTER: (type=«msg.body.type», card=«loadedCard.key», info=«loadedCard.info»)''')
     
     val chain = chains.get(loadedCard.uuid)
     if (msg.body.type == ReqRegister.NEW) {
@@ -188,7 +200,7 @@ class InMemoryGateway {
     
     //request challenge...
     println('''  GT-ENCRYPT-CHALLENGE: (nonce=«nonce», secret=«secretInfo.secret»)''')
-    reply(chUUID, msg.id, new ReqChallenge(card.block.key, msg.from, secretInfo.secret, secretInfo.mode))
+    reply(chUUID, msg.id, new ReqChallenge(card.block.key, msg.from, secretInfo.secret, chain.card.key, secretInfo.mode))
   }
   
   private def void search(String chUUID, ReqSearch msg) {
@@ -248,7 +260,7 @@ class InMemoryGateway {
       println('''  GT-RECOVER-LNK: (uuid=«crLink.uuid», prev=«crLink.prev», next=«crLink.next»)''')
     
     chain.addLink(crLink)
-    println('''  GT-CHAIN-STATUS: (uuid=«chain.uuid», current=«chain.card.uuid», active=«chain.active»)''')
+    println('''  GT-CHAIN-STATUS: (uuid=«chain.uuid», current=«chain.card.key», active=«chain.active»)''')
     
     reply(chUUID, msg.id, new Ack(card.block.key, msg.from, Ack.OK))
   }

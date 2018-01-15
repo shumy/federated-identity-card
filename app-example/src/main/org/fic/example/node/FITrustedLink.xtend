@@ -71,6 +71,11 @@ class FITrustedLink extends IFicNode {
       promptText = "Enter login name here..."
     ]
     
+    val txtUuid = new TextField => [
+      prefWidth = 400
+      promptText = "Enter candidate UUID here..."
+    ]
+    
     val txtLog = new TextArea => [
       editable = false
       wrapText = true
@@ -90,10 +95,11 @@ class FITrustedLink extends IFicNode {
         
         add(new Button => [
           text = "Recover"
-          setOnAction[ recoverCard(txtLogin.text, txtLog.textProperty) ]
+          setOnAction[ recoverCard(txtLogin.text, txtUuid.text, txtLog.textProperty) ]
         ])
         
         add(txtLogin)
+        add(txtUuid)
       ]
     ] 
     
@@ -218,7 +224,7 @@ class FITrustedLink extends IFicNode {
     }
   }
   
-  private def void recoverCard(String name, StringProperty logBox) {
+  private def void recoverCard(String name, String candidate, StringProperty logBox) {
     if (name == "") {
       logBox.value = "Set a value for the login name."
       return
@@ -232,7 +238,9 @@ class FITrustedLink extends IFicNode {
     if (uuid !== null) {
       val chain = chains.get(uuid)
       
-      /*val crLink = CRLink.newRecover(card.block.pubKey, uuid, chain.card.key, next??)
+      val crLink = CRLink.newRecover(card.block.pubKey, uuid, chain.card.key, candidate)
+      crLink.sign(card.prvKey)
+      
       val crMsg = new ReqCRLink(card.block.uuid, crLink.retrieve)
       channel.send(crMsg)[
         if (cmd == FMessage.ACK && (it as Ack).body.code === 0)
@@ -241,7 +249,7 @@ class FITrustedLink extends IFicNode {
           logBox.value = logBox.value + "\nACK: " + (it as Ack).body.error
           logBox.value = logBox.value + "\n" + "---Recover FAIL---"
         }
-      ]*/
+      ]
     }
   }
 }

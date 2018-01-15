@@ -84,13 +84,13 @@ class FICard extends IFicNode {
           text = "Register/Subscribe"
           setOnAction[ registerAndSubscribe(txtLogin.text, txtLog.textProperty) ]
         ])
-        
-        add(txtLogin)
-        
+                
         add(new Button => [
           text = "Send Candidate"
           setOnAction[ sendCandidate(txtLogin.text, txtLog.textProperty) ]
         ])
+        
+        add(txtLogin)
       ]
     ]
     
@@ -148,7 +148,7 @@ class FICard extends IFicNode {
     println('''CREATED-CARD: (uuid=«uuid», key=«candidate.block.key», info=«candidate.block.info»)''')
     
     //register card
-    channel.send(new ReqRegister(uuid, ReqRegister.CANDIDATE, card.block.retrieve))[
+    channel.send(new ReqRegister(uuid, ReqRegister.CANDIDATE, candidate.block.retrieve))[
       if (cmd == FMessage.ACK && (it as Ack).body.code === 0) {
         card = candidate
         logBox.value = logBox.value + "\n" + '''Candidate: (uuid=«uuid», key=«card.block.key»)'''
